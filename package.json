@@ -1,5 +1,5 @@
 {
-  "name": "budgeting-app",
+  "name": "flowfund",
   "type": "module",
   "private": true,
   "scripts": {
@@ -15,6 +15,7 @@
     "vue-router": "^5.0.4"
   },
   "devDependencies": {
+    "@nuxt/icon": "^2.2.2",
     "@nuxtjs/tailwindcss": "^6.14.0"
   }
 }

@@ -1,49 +1,96 @@
 <script setup>
+import { ref } from 'vue'
+import { refreshNuxtData } from '#app'
+
 const type = ref('expense')
 const amount = ref('')
 const note = ref('')
+const date = ref(new Date().toISOString().substr(0, 10))
+const isSubmitting = ref(false)
 
 const submitForm = async () => {
-  await $fetch('http://localhost:8080/transactions', {
-    method: 'POST',
-    body: {
-      user_id: 1,
-      type: type.value,
-      amount: Number(amount.value),
-      note: note.value
-    }
-  })
-
-  // reset form
-  amount.value = ''
-  note.value = ''
+  isSubmitting.value = true
+  try {
+    await $fetch('https://budgeting-api.up.railway.app/transactions', {
+      method: 'POST',
+      body: {
+        user_id: 1,
+        type: type.value,
+        amount: Number(amount.value),
+        note: note.value,
+        date: date.value
+      }
+    })
+    amount.value = ''
+    note.value = ''
+    await refreshNuxtData('transactions-list')
+  } catch (e) {
+    console.error(e)
+  } finally {
+    isSubmitting.value = false
+  }
 }
 </script>
 
 <template>
-  <form @submit.prevent="submitForm" class="space-y-4 p-4 border rounded">
-    
-    <select v-model="type" class="border p-2 w-full">
-      <option value="income">Income</option>
-      <option value="expense">Expense</option>
-    </select>
+  <div class="glass-card p-6 rounded-2xl">
+    <h2 class="text-xl font-bold text-slate-800 mb-6">Add Transaction</h2>
+    <form @submit.prevent="submitForm" class="space-y-5">
+      
+      <div class="space-y-1.5">
+        <label class="text-sm font-medium text-slate-700">Type</label>
+        <div class="relative">
+          <select v-model="type" class="w-full appearance-none bg-white/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-primary focus:border-primary block p-3 outline-none transition-all shadow-sm">
+            <option value="income">Income</option>
+            <option value="expense">Expense</option>
+          </select>
+          <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-500">
+            <Icon name="lucide:chevron-down" class="w-4 h-4" />
+          </div>
+        </div>
+      </div>
 
-    <input
-      v-model="amount"
-      type="number"
-      placeholder="Total Pengeluaran"
-      class="border p-2 w-full"
-    />
+      <div class="space-y-1.5">
+        <label class="text-sm font-medium text-slate-700">Date</label>
+        <input
+          v-model="date"
+          type="date"
+          required
+          class="w-full bg-white/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-primary focus:border-primary block p-3 outline-none transition-all shadow-sm"
+        />
+      </div>
 
-    <input
-      v-model="note"
-      type="text"
-      placeholder="Catatan"
-      class="border p-2 w-full"
-    />
+      <div class="space-y-1.5">
+        <label class="text-sm font-medium text-slate-700">Amount</label>
+        <div class="relative">
+          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500 font-medium">
+            Rp
+          </div>
+          <input
+            v-model="amount"
+            type="number"
+            required
+            placeholder="0"
+            class="w-full pl-10 bg-white/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-primary focus:border-primary block p-3 outline-none transition-all shadow-sm"
+          />
+        </div>
+      </div>
 
-    <button class="bg-blue-500 text-white px-4 py-2 rounded">
-      Save
-    </button>
-  </form>
+      <div class="space-y-1.5">
+        <label class="text-sm font-medium text-slate-700">Note</label>
+        <input
+          v-model="note"
+          type="text"
+          required
+          placeholder="e.g. Groceries"
+          class="w-full bg-white/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-primary focus:border-primary block p-3 outline-none transition-all shadow-sm"
+        />
+      </div>
+
+      <button :disabled="isSubmitting" class="w-full text-white bg-primary hover:bg-primary/90 focus:ring-4 focus:ring-primary/20 font-medium rounded-xl text-sm px-5 py-3 text-center transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed mt-2">
+        <span v-if="isSubmitting">Saving...</span>
+        <span v-else>Save Transaction</span>
+      </button>
+    </form>
+  </div>
 </template>

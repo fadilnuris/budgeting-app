@@ -2,33 +2,38 @@
   <header
     :class="[
       'fixed top-0 left-0 right-0 z-50 transition-all duration-500',
-      scrolled ? 'glass-strong shadow-sm' : 'bg-transparent',
+      scrolled ? 'glass-strong shadow-sm' : 'bg-transparent py-2',
     ]"
   >
     <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-      <a
-        href="#"
-        class="text-lg font-medium tracking-tight text-foreground transition-opacity hover:opacity-70"
+      <NuxtLink
+        to="/dashboard"
+        class="text-xl font-bold tracking-tight text-primary flex items-center gap-2"
       >
-        Budgeting
-      </a>
+        <Icon name="lucide:wallet" class="w-6 h-6" />
+        <span>Flowfund</span>
+      </NuxtLink>
 
       <div class="hidden items-center gap-8 md:flex">
         <ul class="flex items-center gap-8">
           <li v-for="link in navLinks" :key="link.label">
             <a
               :href="link.href"
-              class="text-sm text-muted-foreground transition-colors duration-300 hover:text-foreground"
+              class="text-sm font-medium text-slate-500 transition-colors duration-300 hover:text-primary"
             >
               {{ link.label }}
             </a>
           </li>
         </ul>
-        <ThemeToggle />
+        <button 
+          @click="handleLogout"
+          class="bg-primary text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all duration-300 shadow-md shadow-primary/10 hover:shadow-lg active:scale-95"
+        >
+          Keluar
+        </button>
       </div>
 
       <div class="flex items-center gap-4 md:hidden">
-        <ThemeToggle />
         <button
           type="button"
           @click="mobileOpen = !mobileOpen"
@@ -37,13 +42,13 @@
         >
           <span
             :class="[
-              'block h-px w-6 bg-foreground transition-all duration-300',
+              'block h-px w-6 bg-slate-800 transition-all duration-300',
               mobileOpen ? 'translate-y-[3.5px] rotate-45' : '',
             ]"
           />
           <span
             :class="[
-              'block h-px w-6 bg-foreground transition-all duration-300',
+              'block h-px w-6 bg-slate-800 transition-all duration-300',
               mobileOpen ? '-translate-y-[3.5px] -rotate-45' : '',
             ]"
           />
@@ -54,7 +59,7 @@
     <div
       :class="[
         'overflow-hidden transition-all duration-300 md:hidden',
-        mobileOpen ? 'glass-strong max-h-64 border-b border-border' : 'max-h-0',
+        mobileOpen ? 'glass-strong max-h-64 border-b border-slate-100' : 'max-h-0',
       ]"
     >
       <ul class="flex flex-col gap-4 px-6 py-6">
@@ -62,10 +67,18 @@
           <a
             :href="link.href"
             @click="mobileOpen = false"
-            class="text-sm text-muted-foreground transition-colors hover:text-foreground"
+            class="text-sm font-medium text-slate-500 transition-colors hover:text-primary"
           >
             {{ link.label }}
           </a>
+        </li>
+        <li>
+          <button 
+            @click="handleLogout"
+            class="w-full text-left text-sm font-semibold text-rose-500 py-2"
+          >
+            Keluar
+          </button>
         </li>
       </ul>
     </div>
@@ -74,16 +87,24 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const navLinks = [
-  { label: 'Dashbard', href: '#about' },
-  { label: 'Budgeting', href: '#experience' },
-  { label: 'Savings', href: '#skills' },
-  { label: 'Goals', href: '#projects' },
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Transaksi', href: '#' },
+  { label: 'Analisis', href: '#' },
+  { label: 'Pengaturan', href: '#' },
 ]
 
 const scrolled = ref(false)
 const mobileOpen = ref(false)
+
+const handleLogout = () => {
+  const authToken = useCookie('auth_token')
+  authToken.value = null
+  router.push('/login')
+}
 
 const handleScroll = () => {
   scrolled.value = window.scrollY > 20
@@ -98,3 +119,4 @@ onBeforeUnmount(() => {
   window.removeEventListener('scroll', handleScroll)
 })
 </script>
+
