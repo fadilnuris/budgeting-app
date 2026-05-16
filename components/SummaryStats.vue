@@ -5,14 +5,14 @@
       <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
         <Icon name="lucide:circle-dollar-sign" class="w-16 h-16 text-primary" />
       </div>
-      <p class="text-sm font-medium text-slate-500 mb-1">Total Balance</p>
+      <p class="text-sm font-medium text-slate-500 mb-1">Total Saldo</p>
       <div class="flex items-baseline space-x-1">
         <h3 class="text-2xl font-bold text-slate-800">Rp {{ balance.toLocaleString() }}</h3>
       </div>
       <div class="mt-4 flex items-center text-xs font-medium" :class="balance >= 0 ? 'text-emerald-600' : 'text-rose-600'">
         <Icon v-if="balance >= 0" name="lucide:trending-up" class="w-3 h-3 mr-1" />
         <Icon v-else name="lucide:trending-down" class="w-3 h-3 mr-1" />
-        <span>{{ balance >= 0 ? 'Net Profit' : 'Net Loss' }}</span>
+        <span>{{ balance >= 0 ? 'Laba Bersih' : 'Rugi Bersih' }}</span>
       </div>
     </div>
 
@@ -21,12 +21,12 @@
       <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500 text-emerald-500">
         <Icon name="lucide:arrow-up-circle" class="w-16 h-16" />
       </div>
-      <p class="text-sm font-medium text-slate-500 mb-1">Total Income</p>
+      <p class="text-sm font-medium text-slate-500 mb-1">Total Pemasukan</p>
       <div class="flex items-baseline space-x-1">
         <h3 class="text-2xl font-bold text-emerald-600">Rp {{ totalIncome.toLocaleString() }}</h3>
       </div>
       <div class="mt-4 flex items-center text-xs font-medium text-slate-400">
-        <span>Accumulated earnings</span>
+        <span>Akumulasi pendapatan</span>
       </div>
     </div>
 
@@ -35,12 +35,12 @@
       <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500 text-rose-500">
         <Icon name="lucide:arrow-down-circle" class="w-16 h-16" />
       </div>
-      <p class="text-sm font-medium text-slate-500 mb-1">Total Expenses</p>
+      <p class="text-sm font-medium text-slate-500 mb-1">Total Pengeluaran</p>
       <div class="flex items-baseline space-x-1">
         <h3 class="text-2xl font-bold text-rose-600">Rp {{ totalExpense.toLocaleString() }}</h3>
       </div>
       <div class="mt-4 flex items-center text-xs font-medium text-slate-400">
-        <span>Accumulated spending</span>
+        <span>Akumulasi pengeluaran</span>
       </div>
     </div>
   </div>

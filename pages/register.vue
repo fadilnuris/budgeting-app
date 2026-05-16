@@ -173,7 +173,7 @@ const handleRegister = async () => {
 
 // SEO
 useHead({
-  title: 'Daftar - Flowfund',
+  title: 'Daftar',
   meta: [
     { name: 'description', content: 'Buat akun Flowfund Anda untuk mulai mengelola keuangan dengan lebih cerdas.' }
   ]

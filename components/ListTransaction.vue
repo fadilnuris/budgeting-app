@@ -1,27 +1,27 @@
 <template>
   <div class="glass-card rounded-2xl overflow-hidden h-full flex flex-col">
     <div class="p-6 border-b border-slate-100 bg-white/40 flex justify-between items-center">
-      <h2 class="text-xl font-bold text-slate-800">Recent Transactions</h2>
-      <span class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">{{ data?.data?.length || 0 }} entries</span>
+      <h2 class="text-xl font-bold text-slate-800">Transaksi Terakhir</h2>
+      <span class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">{{ data?.data?.length || 0 }} transaksi</span>
     </div>
 
     <div class="p-6 flex-1 overflow-auto">
       <div v-if="pending" class="flex flex-col items-center justify-center py-10 space-y-4">
         <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-        <p class="text-slate-500 font-medium animate-pulse">Loading data...</p>
+        <p class="text-slate-500 font-medium animate-pulse">Memuat data...</p>
       </div>
       
       <div v-else-if="error" class="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 flex items-center space-x-3">
         <Icon name="lucide:alert-circle" class="w-5 h-5 flex-shrink-0" />
-        <span class="font-medium">Failed to load transactions.</span>
+        <span class="font-medium">Gagal memuat transaksi.</span>
       </div>
 
       <div v-else-if="!data?.data || data.data.length === 0" class="text-center py-12">
         <div class="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
           <Icon name="lucide:clipboard-list" class="w-8 h-8 text-slate-400" />
         </div>
-        <p class="text-slate-500 font-medium">No transactions yet.</p>
-        <p class="text-slate-400 text-sm mt-1">Start by adding your first transaction.</p>
+        <p class="text-slate-500 font-medium">Belum ada transaksi.</p>
+        <p class="text-slate-400 text-sm mt-1">Mulai dengan menambahkan transaksi pertama Anda.</p>
       </div>
 
       <div v-else class="space-y-4">
@@ -39,9 +39,9 @@
               <Icon v-else name="lucide:trending-down" class="w-6 h-6" />
             </div>
             <div>
-              <p class="font-semibold text-slate-800">{{ item.Note || 'Uncategorized' }}</p>
+              <p class="font-semibold text-slate-800">{{ item.Note || 'Tanpa kategori' }}</p>
               <div class="flex items-center space-x-2 mt-0.5">
-                <p class="text-xs font-medium text-slate-500 capitalize">{{ item.Type }}</p>
+                <p class="text-xs font-medium text-slate-500 capitalize">{{ item.Type === 'income' ? 'Pemasukan' : 'Pengeluaran' }}</p>
                 <span class="text-[10px] text-slate-300">•</span>
                 <p class="text-xs text-slate-400">{{ formatDate(item.CreatedAt) }}</p>
               </div>
@@ -57,7 +57,7 @@
             <button 
               @click="deleteTransaction(item.ID)"
               class="p-2 text-rose-500 bg-rose-50 rounded-lg"
-              title="Delete transaction"
+              title="Hapus transaksi"
             >
               <Icon name="lucide:trash-2" class="w-4 h-4" />
             </button>
@@ -81,20 +81,20 @@
             <div class="w-14 h-14 bg-rose-50 rounded-full flex items-center justify-center mb-6 text-rose-500">
               <Icon name="lucide:trash-2" class="w-8 h-8" />
             </div>
-            <h3 class="text-2xl font-bold text-slate-800 mb-2">Delete Transaction?</h3>
-            <p class="text-slate-500 mb-8 leading-relaxed">Are you sure you want to delete this transaction? This action cannot be undone.</p>
+            <h3 class="text-2xl font-bold text-slate-800 mb-2">Hapus Transaksi?</h3>
+            <p class="text-slate-500 mb-8 leading-relaxed">Apakah Anda yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.</p>
             <div class="flex space-x-3">
               <button 
                 @click="showDeleteModal = false" 
                 class="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-all duration-200"
               >
-                Cancel
+                Batal
               </button>
               <button 
                 @click="handleConfirmDelete" 
                 class="flex-1 px-4 py-3 rounded-xl bg-rose-500 text-white font-semibold hover:bg-rose-600 shadow-lg shadow-rose-200 transition-all duration-200"
               >
-                Delete
+                Hapus
               </button>
             </div>
           </div>

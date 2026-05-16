@@ -17,17 +17,22 @@
       <div class="hidden items-center gap-8 md:flex">
         <ul class="flex items-center gap-8">
           <li v-for="link in navLinks" :key="link.label">
-            <a
-              :href="link.href"
-              class="text-sm font-medium text-slate-500 transition-colors duration-300 hover:text-primary"
+            <NuxtLink
+              :to="link.href"
+              class="relative px-4 py-2 text-sm font-semibold text-slate-600 hover:text-primary transition-all duration-300 rounded-xl flex items-center justify-center group"
+              active-class="text-primary bg-primary/10 shadow-sm shadow-primary/5"
+              exact-active-class="text-primary bg-primary/10"
             >
               {{ link.label }}
-            </a>
+              <span 
+                class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-primary rounded-full scale-0 transition-transform duration-300 group-[.router-link-active]:scale-100"
+              ></span>
+            </NuxtLink>
           </li>
         </ul>
         <button 
           @click="handleLogout"
-          class="bg-primary text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-primary/90 transition-all duration-300 shadow-md shadow-primary/10 hover:shadow-lg active:scale-95"
+          class="border-2 border-primary text-primary text-sm font-semibold px-5 py-2 rounded-xl hover:bg-primary transition-all duration-300 hover:text-white shadow-md shadow-primary/10 hover:shadow-lg active:scale-95"
         >
           Keluar
         </button>
@@ -64,13 +69,17 @@
     >
       <ul class="flex flex-col gap-4 px-6 py-6">
         <li v-for="link in navLinks" :key="link.label">
-          <a
-            :href="link.href"
+          <NuxtLink
+            :to="link.href"
             @click="mobileOpen = false"
-            class="text-sm font-medium text-slate-500 transition-colors hover:text-primary"
+            class="relative px-4 py-3 text-sm font-semibold text-slate-600 hover:text-primary transition-all duration-300 rounded-xl flex items-center group"
+            active-class="text-primary bg-primary/10"
           >
             {{ link.label }}
-          </a>
+            <span 
+              class="absolute left-0 w-1 h-6 bg-primary rounded-r-full scale-y-0 transition-transform duration-300 group-[.router-link-active]:scale-y-100"
+            ></span>
+          </NuxtLink>
         </li>
         <li>
           <button 
@@ -92,9 +101,9 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const navLinks = [
   { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Transaksi', href: '#' },
-  { label: 'Analisis', href: '#' },
-  { label: 'Pengaturan', href: '#' },
+  { label: 'Transaksi', href: '/transactions' },
+  // { label: 'Analisis', href: '#' },
+  // { label: 'Pengaturan', href: '#' },
 ]
 
 const scrolled = ref(false)

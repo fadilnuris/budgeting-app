@@ -136,7 +136,7 @@ const handleLogin = async () => {
 
 // SEO
 useHead({
-  title: 'Login - Flowfund',
+  title: 'Masuk',
   meta: [
     { name: 'description', content: 'Masuk ke akun Flowfund Anda untuk mulai mengelola keuangan.' }
   ]
