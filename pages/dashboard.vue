@@ -12,18 +12,32 @@
         <SummaryStats />
       </div>
 
-      <div class="mt-8 animate-fade-in-up" style="animation-delay: 0.2s">
-        <div class="glass-card p-8 rounded-3xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up" style="animation-delay: 0.2s">
+        <div class="glass-card p-8 rounded-3xl bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/10 flex flex-col items-start justify-between gap-6">
           <div>
-            <h3 class="text-xl font-bold text-slate-800 mb-1">Kelola Transaksi Anda</h3>
-            <p class="text-slate-500">Lihat riwayat lengkap atau tambahkan transaksi baru di menu Transaksi.</p>
+            <h3 class="text-xl font-bold text-slate-800 mb-1">Rencana Anggaran</h3>
+            <p class="text-slate-500 text-sm">Buat rencana pengeluaran bulanan Anda agar keuangan tetap terkendali.</p>
+          </div>
+          <NuxtLink 
+            to="/budgeting" 
+            class="bg-amber-500 text-white px-6 py-3 rounded-2xl font-bold hover:bg-amber-600 transition-all duration-300 shadow-lg shadow-amber-200 active:scale-95 flex items-center gap-2 whitespace-nowrap text-sm"
+          >
+            Buka Budgeting
+            <Icon name="lucide:calculator" class="w-4 h-4" />
+          </NuxtLink>
+        </div>
+
+        <div class="glass-card p-8 rounded-3xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 flex flex-col items-start justify-between gap-6">
+          <div>
+            <h3 class="text-xl font-bold text-slate-800 mb-1">Kelola Transaksi</h3>
+            <p class="text-slate-500 text-sm">Lihat riwayat lengkap atau tambahkan transaksi baru secara real-time.</p>
           </div>
           <NuxtLink 
             to="/transactions" 
-            class="bg-primary text-white px-8 py-4 rounded-2xl font-bold hover:bg-primary/90 transition-all duration-300 shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2 whitespace-nowrap"
+            class="bg-primary text-white px-6 py-3 rounded-2xl font-bold hover:bg-primary/90 transition-all duration-300 shadow-lg shadow-primary/20 active:scale-95 flex items-center gap-2 whitespace-nowrap text-sm"
           >
             Buka Transaksi
-            <Icon name="lucide:arrow-right" class="w-5 h-5" />
+            <Icon name="lucide:arrow-right" class="w-4 h-4" />
           </NuxtLink>
         </div>
       </div>

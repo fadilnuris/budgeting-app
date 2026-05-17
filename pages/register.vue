@@ -154,15 +154,13 @@ const handleRegister = async () => {
         confirmation_password: passwordConfirm.value
       }
     })
-    
-    // Set cookie 'auth_token' - Sesuaikan dengan apa yang dikembalikan backend (misal: response.token)
+
     const authToken = useCookie('auth_token', {
-      maxAge: 60 * 60 * 24 * 7, // 1 minggu
+      maxAge: 60 * 60 * 24 * 3,
       path: '/'
     })
     authToken.value = response.token || 'logged-in'
     
-    // Berhasil, diarahkan ke dashboard
     router.push('/dashboard')
   } catch (error: any) {
     errorMessage.value = error.data?.error || 'Terjadi kesalahan saat mendaftar. Silakan coba lagi.'
@@ -171,7 +169,6 @@ const handleRegister = async () => {
   }
 }
 
-// SEO
 useHead({
   title: 'Daftar',
   meta: [

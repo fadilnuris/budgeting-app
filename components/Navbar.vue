@@ -102,8 +102,7 @@ const router = useRouter()
 const navLinks = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Transaksi', href: '/transactions' },
-  // { label: 'Analisis', href: '#' },
-  // { label: 'Pengaturan', href: '#' },
+  { label: 'Budgeting', href: '/budgeting' },
 ]
 
 const scrolled = ref(false)

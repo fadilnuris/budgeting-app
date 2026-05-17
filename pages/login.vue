@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-    <!-- Background Decor -->
+
     <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
       <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] opacity-60"></div>
       <div class="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] opacity-60"></div>
@@ -119,9 +119,8 @@ const handleLogin = async () => {
       }
     })
     
-    // Set cookie 'auth_token' - Sesuaikan dengan apa yang dikembalikan backend (misal: response.token)
     const authToken = useCookie('auth_token', {
-      maxAge: 60 * 60 * 24 * 7, // 1 minggu
+      maxAge: 60 * 60 * 24 * 3,
       path: '/'
     })
     authToken.value = response.token || 'logged-in'
@@ -134,7 +133,6 @@ const handleLogin = async () => {
   }
 }
 
-// SEO
 useHead({
   title: 'Masuk',
   meta: [

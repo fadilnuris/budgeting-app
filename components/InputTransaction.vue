@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { refreshNuxtData } from '#app'
 
 const type = ref('expense')
@@ -7,6 +7,21 @@ const amount = ref('')
 const note = ref('')
 const date = ref(new Date().toISOString().substr(0, 10))
 const isSubmitting = ref(false)
+
+const formattedAmount = computed({
+  get() {
+    if (!amount.value) return ''
+    return new Intl.NumberFormat('id-ID', {
+      style: 'currency',
+      currency: 'IDR',
+      minimumFractionDigits: 0
+    }).format(amount.value)
+  },
+  set(val) {
+    const number = parseInt(val.replace(/[^0-9]/g, ''), 10)
+    amount.value = isNaN(number) ? 0 : number
+  }
+})
 
 const submitForm = async () => {
   isSubmitting.value = true
@@ -62,18 +77,13 @@ const submitForm = async () => {
 
       <div class="space-y-1.5">
         <label class="text-sm font-medium text-slate-700">Nominal</label>
-        <div class="relative">
-          <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500 font-medium">
-            Rp
-          </div>
-          <input
-            v-model="amount"
-            type="number"
-            required
-            placeholder="0"
-            class="w-full pl-10 bg-white/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-primary focus:border-primary block p-3 outline-none transition-all shadow-sm"
-          />
-        </div>
+        <input
+          v-model="formattedAmount"
+          type="text"
+          required
+          placeholder="Rp0"
+          class="w-full bg-white/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-primary focus:border-primary block p-3 outline-none transition-all shadow-sm font-semibold"
+        />
       </div>
 
       <div class="space-y-1.5">

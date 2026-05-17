@@ -1,6 +1,5 @@
 <template>
   <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-    <!-- Balance Card -->
     <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
       <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500">
         <Icon name="lucide:circle-dollar-sign" class="w-16 h-16 text-primary" />
@@ -16,7 +15,6 @@
       </div>
     </div>
 
-    <!-- Income Card -->
     <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
       <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500 text-emerald-500">
         <Icon name="lucide:arrow-up-circle" class="w-16 h-16" />
@@ -30,7 +28,6 @@
       </div>
     </div>
 
-    <!-- Expense Card -->
     <div class="glass-card p-6 rounded-2xl relative overflow-hidden group">
       <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform duration-500 text-rose-500">
         <Icon name="lucide:arrow-down-circle" class="w-16 h-16" />

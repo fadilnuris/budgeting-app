@@ -66,7 +66,6 @@
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
     <Teleport to="body">
       <Transition
         enter-active-class="transition duration-200 ease-out"
