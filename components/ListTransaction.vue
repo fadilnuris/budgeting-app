@@ -85,7 +85,7 @@
             <div class="flex space-x-3">
               <button 
                 @click="showDeleteModal = false" 
-                class="flex-1 px-4 py-3 rounded-xl border border-slate-200 text-slate-600 font-semibold hover:bg-slate-50 transition-all duration-200"
+                class="flex-1 px-4 py-3 rounded-xl bg-slate-50 text-slate-600 font-semibold transition-all duration-200"
               >
                 Batal
               </button>
@@ -106,8 +106,13 @@
 <script setup>
 import { ref } from 'vue'
 import { refreshNuxtData } from '#app'
+
+const userIdCookie = useCookie('user_id')
+const userId = userIdCookie.value || '0'
+
 const { data, pending, error } = await useFetch('https://budgeting-api.up.railway.app/transactions', {
-  key: 'transactions-list'
+  key: 'transactions-list',
+  params: { user_id: userId }
 })
 
 const formatDate = (dateString) => {

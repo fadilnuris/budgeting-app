@@ -46,8 +46,12 @@
 <script setup>
 import { computed } from 'vue'
 
+const userIdCookie = useCookie('user_id')
+const userId = userIdCookie.value || '0'
+
 const { data } = await useFetch('https://budgeting-api.up.railway.app/transactions', {
-  key: 'transactions-list'
+  key: 'transactions-list',
+  params: { user_id: userId }
 })
 
 const totalIncome = computed(() => {

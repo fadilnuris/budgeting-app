@@ -1,6 +1,11 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
 
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+      <div class="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-primary/20 rounded-full blur-[120px] opacity-60"></div>
+      <div class="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] opacity-60"></div>
+    </div>
+
     <div class="max-w-md w-full space-y-8 glass-card bg-white/70 backdrop-blur-xl p-10 rounded-3xl shadow-2xl relative z-10 border border-white/50 animate-fade-in">
       <div class="text-center">
         <div class="mx-auto h-14 w-14 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 mb-6">
@@ -111,6 +116,39 @@
         </p>
       </div>
     </div>
+
+    <!-- Success Modal -->
+    <div v-if="showSuccessModal" class="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <!-- Backdrop -->
+      <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300" @click="goToLogin"></div>
+      
+      <!-- Modal Box -->
+      <div class="max-w-md w-full bg-white/95 backdrop-blur-xl border border-white/50 rounded-3xl shadow-2xl p-8 relative z-10 text-center transform scale-100 transition-all duration-300 animate-fade-in-up">
+        <!-- Beautiful Success Icon -->
+        <div class="mx-auto h-20 w-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 border border-emerald-100 shadow-inner">
+          <div class="h-16 w-16 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30">
+            <Icon name="lucide:check" class="h-8 w-8 text-white stroke-[3px]" />
+          </div>
+        </div>
+        
+        <h3 class="text-2xl font-extrabold text-slate-900 tracking-tight mb-2">
+          Pendaftaran Berhasil!
+        </h3>
+        
+        <p class="text-slate-500 font-medium mb-8 px-2">
+          Akun Anda telah berhasil dibuat. Silakan masuk untuk mulai mengelola keuangan Anda dengan Flowfund.
+        </p>
+        
+        <button 
+          @click="goToLogin"
+          class="w-full flex justify-center items-center space-x-2 py-3.5 px-6 rounded-2xl text-md font-bold text-white bg-primary hover:bg-primary/90 transition-all duration-300 shadow-lg shadow-primary/20 hover:shadow-primary/30 transform hover:-translate-y-0.5 active:translate-y-0 animate-pulse-subtle"
+        >
+          <span>Masuk ke Akun</span>
+          <Icon name="lucide:arrow-right" class="h-5 w-5" />
+        </button>
+      </div>
+    </div>
+
   </div>
 </template>
 
@@ -125,9 +163,13 @@ const password = ref('')
 const passwordConfirm = ref('')
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
-const acceptTerms = ref(false)
+const showSuccessModal = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
+
+const goToLogin = () => {
+  router.push('/login')
+}
 
 const handleRegister = async () => {
   errorMessage.value = ''
@@ -137,15 +179,10 @@ const handleRegister = async () => {
     return
   }
 
-  if (!acceptTerms.value) {
-    errorMessage.value = 'Anda harus menyetujui syarat dan ketentuan.'
-    return
-  }
-
   isLoading.value = true
   
   try {
-    const response: any = await $fetch('https://budgeting-api.up.railway.app/register', {
+    await $fetch('https://budgeting-api.up.railway.app/register', {
       method: 'POST',
       body: {
         name: name.value,
@@ -155,13 +192,7 @@ const handleRegister = async () => {
       }
     })
 
-    const authToken = useCookie('auth_token', {
-      maxAge: 60 * 60 * 24 * 3,
-      path: '/'
-    })
-    authToken.value = response.token || 'logged-in'
-    
-    router.push('/dashboard')
+    showSuccessModal.value = true
   } catch (error: any) {
     errorMessage.value = error.data?.error || 'Terjadi kesalahan saat mendaftar. Silakan coba lagi.'
   } finally {

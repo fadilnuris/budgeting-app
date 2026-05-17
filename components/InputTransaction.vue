@@ -2,6 +2,9 @@
 import { ref, computed } from 'vue'
 import { refreshNuxtData } from '#app'
 
+const userIdCookie = useCookie('user_id')
+const userId = parseInt(userIdCookie.value || '0', 10)
+
 const type = ref('expense')
 const amount = ref('')
 const note = ref('')
@@ -29,7 +32,7 @@ const submitForm = async () => {
     await $fetch('https://budgeting-api.up.railway.app/transactions', {
       method: 'POST',
       body: {
-        user_id: 1,
+        user_id: userId,
         type: type.value,
         amount: Number(amount.value),
         note: note.value,

@@ -7,7 +7,8 @@ const items = ref<BudgetItem[]>([])
 const isLoading = ref(true)
 const isSaving = ref(false)
 const currentMonth = ref(new Date().toISOString().slice(0, 7)) // YYYY-MM
-const userId = 1
+const userIdCookie = useCookie('user_id')
+const userId = parseInt(userIdCookie.value || '0', 10)
 
 const categories = ref<BudgetCategory[]>([
   { name: 'Tabungan', color: 'blue' },
@@ -247,18 +248,29 @@ const saveModalItem = async () => {
   }
 }
 
-const removeItem = async (id?: number) => {
-  if (!id) return;
-  if (!confirm('Hapus item ini?')) return;
+const showDeleteModal = ref(false)
+const itemToDelete = ref<number | null>(null)
+
+const removeItem = (id?: number) => {
+  if (!id) return
+  itemToDelete.value = id
+  showDeleteModal.value = true
+}
+
+const handleConfirmDelete = async () => {
+  if (!itemToDelete.value) return
   
   try {
-    await $fetch(`https://budgeting-api.up.railway.app/budget/items/${id}`, {
+    await $fetch(`https://budgeting-api.up.railway.app/budget/items/${itemToDelete.value}`, {
       method: 'DELETE'
     })
     await fetchBudget()
   } catch (e) {
     console.error('Failed to delete item:', e)
     alert('Gagal menghapus item.')
+  } finally {
+    showDeleteModal.value = false
+    itemToDelete.value = null
   }
 }
 
@@ -681,6 +693,41 @@ const saveCategories = async () => {
         </div>
       </div>
     </Transition>
+
+    <Teleport to="body">
+      <Transition
+        enter-active-class="transition duration-200 ease-out"
+        enter-from-class="opacity-0 scale-95"
+        enter-to-class="opacity-100 scale-100"
+        leave-active-class="transition duration-150 ease-in"
+        leave-from-class="opacity-100 scale-100"
+        leave-to-class="opacity-0 scale-95"
+      >
+        <div v-if="showDeleteModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-[2px]">
+          <div class="glass-card bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8">
+            <div class="w-14 h-14 bg-rose-50 rounded-full flex items-center justify-center mb-6 text-rose-500">
+              <Icon name="lucide:trash-2" class="w-8 h-8" />
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-2">Hapus Item Anggaran?</h3>
+            <p class="text-slate-500 mb-8 leading-relaxed">Apakah Anda yakin ingin menghapus item alokasi anggaran ini? Tindakan ini tidak dapat dibatalkan.</p>
+            <div class="flex space-x-3">
+              <button 
+                @click="showDeleteModal = false" 
+                class="flex-1 px-4 py-3 rounded-xl bg-slate-50 text-slate-600 font-semibold transition-all duration-200"
+              >
+                Batal
+              </button>
+              <button 
+                @click="handleConfirmDelete" 
+                class="flex-1 px-4 py-3 rounded-xl bg-rose-500 text-white font-semibold hover:bg-rose-600 shadow-lg shadow-rose-200 transition-all duration-200"
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 

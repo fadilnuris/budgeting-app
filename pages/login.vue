@@ -124,6 +124,13 @@ const handleLogin = async () => {
       path: '/'
     })
     authToken.value = response.token || 'logged-in'
+
+    const userCookie = useCookie('user_id', {
+      maxAge: 60 * 60 * 24 * 3,
+      path: '/'
+    })
+    const userIdVal = response.data?.ID || response.data?.id
+    userCookie.value = userIdVal ? userIdVal.toString() : ''
     
     router.push('/dashboard')
   } catch (error: any) {

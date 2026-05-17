@@ -111,6 +111,8 @@ const mobileOpen = ref(false)
 const handleLogout = () => {
   const authToken = useCookie('auth_token')
   authToken.value = null
+  const userCookie = useCookie('user_id')
+  userCookie.value = null
   router.push('/login')
 }
 
