@@ -131,6 +131,18 @@ const handleLogin = async () => {
     })
     const userIdVal = response.data?.ID || response.data?.id
     userCookie.value = userIdVal ? userIdVal.toString() : ''
+
+    const userNameCookie = useCookie('user_name', {
+      maxAge: 60 * 60 * 24 * 3,
+      path: '/'
+    })
+    userNameCookie.value = response.data?.name || response.data?.Name || 'Pengguna Flowfund'
+
+    const userEmailCookie = useCookie('user_email', {
+      maxAge: 60 * 60 * 24 * 3,
+      path: '/'
+    })
+    userEmailCookie.value = response.data?.email || response.data?.Email || 'pengguna@flowfund.com'
     
     router.push('/dashboard')
   } catch (error: any) {
