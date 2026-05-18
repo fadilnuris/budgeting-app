@@ -1,11 +1,11 @@
 <template>
   <div class="glass-card rounded-2xl overflow-hidden h-full flex flex-col">
-    <div class="p-6 border-b border-slate-100 bg-white/40 flex justify-between items-center">
+    <div class="p-4 sm:p-6 border-b border-slate-100 bg-white/40 flex justify-between items-center">
       <h2 class="text-xl font-bold text-slate-800">Transaksi Terakhir</h2>
       <span class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">{{ data?.data?.length || 0 }} transaksi</span>
     </div>
 
-    <div class="p-6 flex-1 overflow-auto">
+    <div class="p-4 sm:p-6 flex-1 overflow-auto">
       <div v-if="pending" class="flex flex-col items-center justify-center py-10 space-y-4">
         <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
         <p class="text-slate-500 font-medium animate-pulse">Memuat data...</p>
@@ -24,39 +24,39 @@
         <p class="text-slate-400 text-sm mt-1">Mulai dengan menambahkan transaksi pertama Anda.</p>
       </div>
 
-      <div v-else class="space-y-4">
+      <div v-else class="space-y-3">
         <div
           v-for="item in data.data"
           :key="item.ID"
-          class="group flex items-center justify-between p-4 rounded-xl border border-slate-100 bg-white/60 hover:bg-white hover:shadow-sm transition-all duration-300"
+          class="group flex items-center justify-between p-3 sm:p-4 rounded-xl border border-slate-100 bg-white/60 hover:bg-white hover:shadow-sm transition-all duration-300 gap-3"
         >
-          <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-3 min-w-0">
             <div :class="[
-              'w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110',
+              'w-10 sm:w-12 h-10 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110',
               item.Type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
             ]">
-              <Icon v-if="item.Type === 'income'" name="lucide:trending-up" class="w-6 h-6" />
-              <Icon v-else name="lucide:trending-down" class="w-6 h-6" />
+              <Icon v-if="item.Type === 'income'" name="lucide:trending-up" class="w-5 sm:w-6 h-5 sm:h-6" />
+              <Icon v-else name="lucide:trending-down" class="w-5 sm:w-6 h-5 sm:h-6" />
             </div>
-            <div>
-              <p class="font-semibold text-slate-800">{{ item.Note || 'Tanpa kategori' }}</p>
+            <div class="min-w-0">
+              <p class="font-semibold text-slate-800 text-sm sm:text-base truncate">{{ item.Note || 'Tanpa kategori' }}</p>
               <div class="flex items-center space-x-2 mt-0.5">
-                <p class="text-xs font-medium text-slate-500 capitalize">{{ item.Type === 'income' ? 'Pemasukan' : 'Pengeluaran' }}</p>
+                <p class="text-[10px] sm:text-xs font-medium text-slate-500 capitalize">{{ item.Type === 'income' ? 'Pemasukan' : 'Pengeluaran' }}</p>
                 <span class="text-[10px] text-slate-300">•</span>
-                <p class="text-xs text-slate-400">{{ formatDate(item.CreatedAt) }}</p>
+                <p class="text-[10px] sm:text-xs text-slate-400">{{ formatDate(item.CreatedAt) }}</p>
               </div>
             </div>
           </div>
-          <div class="flex flex-col items-end space-y-2">
+          <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <p :class="[
-              'font-bold text-lg',
+              'font-bold text-sm sm:text-lg',
               item.Type === 'income' ? 'text-emerald-600' : 'text-slate-800'
             ]">
               <span v-if="item.Type === 'income'">+</span><span v-else>-</span>Rp {{ item.Amount.toLocaleString() }}
             </p>
             <button 
               @click="deleteTransaction(item.ID)"
-              class="p-2 text-rose-500 bg-rose-50 rounded-lg"
+              class="p-2 text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all duration-200 active:scale-95"
               title="Hapus transaksi"
             >
               <Icon name="lucide:trash-2" class="w-4 h-4" />

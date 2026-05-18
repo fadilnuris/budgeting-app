@@ -13,7 +13,7 @@
       </div>
 
       <div class="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6 animate-fade-in-up" style="animation-delay: 0.2s">
-        <div class="glass-card p-8 rounded-3xl bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/10 flex flex-col items-start justify-between gap-6">
+        <div class="glass-card p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-amber-500/5 to-transparent border border-amber-500/10 flex flex-col items-start justify-between gap-6">
           <div>
             <h3 class="text-xl font-bold text-slate-800 mb-1">Rencana Anggaran</h3>
             <p class="text-slate-500 text-sm">Buat rencana pengeluaran bulanan Anda agar keuangan tetap terkendali.</p>
@@ -27,7 +27,7 @@
           </NuxtLink>
         </div>
 
-        <div class="glass-card p-8 rounded-3xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 flex flex-col items-start justify-between gap-6">
+        <div class="glass-card p-6 sm:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 flex flex-col items-start justify-between gap-6">
           <div>
             <h3 class="text-xl font-bold text-slate-800 mb-1">Kelola Transaksi</h3>
             <p class="text-slate-500 text-sm">Lihat riwayat lengkap atau tambahkan transaksi baru secara real-time.</p>

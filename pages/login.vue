@@ -6,7 +6,7 @@
       <div class="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] opacity-60"></div>
     </div>
 
-    <div class="max-w-md w-full space-y-8 glass-card bg-white/70 backdrop-blur-xl p-10 rounded-3xl shadow-2xl relative z-10 border border-white/50 animate-fade-in">
+    <div class="max-w-md w-full space-y-8 glass-card bg-white/70 backdrop-blur-xl p-6 sm:p-10 rounded-2xl sm:rounded-3xl shadow-2xl relative z-10 border border-white/50 animate-fade-in">
       <div class="text-center">
         <div class="mx-auto h-14 w-14 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 mb-6">
           <Icon name="lucide:wallet" class="h-7 w-7 text-white" />

@@ -51,7 +51,7 @@ const submitForm = async () => {
 </script>
 
 <template>
-  <div class="glass-card p-6 rounded-2xl">
+  <div class="glass-card p-5 sm:p-6 rounded-2xl">
     <h2 class="text-xl font-bold text-slate-800 mb-6">Tambah Transaksi</h2>
     <form @submit.prevent="submitForm" class="space-y-5">
       

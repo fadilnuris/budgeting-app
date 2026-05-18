@@ -329,8 +329,8 @@ const saveCategories = async () => {
 
     <div v-else class="max-w-7xl mx-auto w-full flex-1 flex flex-col">
       <div class="flex flex-col md:flex-row justify-between items-start mb-10 gap-6 animate-fade-in-up">
-        <div class="glass-card p-6 flex-1 w-full md:w-auto">
-          <div class="flex justify-between items-center mb-4">
+        <div class="glass-card p-5 sm:p-6 flex-1 w-full md:w-auto">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h2 class="text-xl font-bold flex items-center gap-2">
               <Icon name="ph:calendar-bold" class="text-blue-500" />
               Budgeting Overview
@@ -374,8 +374,8 @@ const saveCategories = async () => {
           </div>
         </div>
 
-        <div class="glass-card p-6 flex-[1.5] w-full md:w-auto">
-          <div class="flex justify-between items-center mb-4">
+        <div class="glass-card p-5 sm:p-6 flex-[1.5] w-full md:w-auto">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
             <h2 class="text-xl font-bold flex items-center gap-2">
               <Icon name="ph:chart-pie-slice-bold" class="text-amber-500" />
               Ringkasan Kategori
@@ -413,7 +413,7 @@ const saveCategories = async () => {
       </div>
 
       <div class="glass-card p-0 overflow-hidden mb-10 animate-fade-in-up" style="animation-delay: 0.1s">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center">
+        <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-xl font-bold flex items-center gap-2">
             <Icon name="ph:list-checks-bold" class="text-pink-500" />
             Alokasi Pengeluaran
@@ -424,7 +424,8 @@ const saveCategories = async () => {
           </button>
         </div>
         
-        <div class="overflow-x-auto">
+        <!-- Desktop Table View -->
+        <div class="hidden md:block overflow-x-auto">
           <table class="w-full text-sm">
             <thead class="bg-slate-50/80">
               <tr>
@@ -466,17 +467,54 @@ const saveCategories = async () => {
             </tbody>
           </table>
         </div>
+
+        <!-- Mobile Card List View -->
+        <div class="block md:hidden divide-y divide-slate-100">
+          <div v-for="(item, index) in items" :key="index" class="p-5 flex flex-col gap-3 hover:bg-blue-50/10 transition-colors">
+            <div class="flex justify-between items-start">
+              <div class="min-w-0">
+                <h4 class="font-bold text-slate-800 text-sm truncate">{{ item.name }}</h4>
+                <div class="flex items-center gap-2 mt-1">
+                  <span :class="getCategoryClass(item.category)" class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider">
+                    {{ item.category }}
+                  </span>
+                  <span class="text-[10px] text-slate-300">•</span>
+                  <span class="text-[10px] text-slate-500 font-medium">
+                    {{ income > 0 ? ((item.nominal / income) * 100).toFixed(1) : 0 }}%
+                  </span>
+                </div>
+              </div>
+              <p class="font-extrabold text-slate-900 text-sm text-right shrink-0">
+                {{ formatCurrency(item.nominal) }}
+              </p>
+            </div>
+            
+            <div class="flex justify-end gap-3 mt-1 pt-2 border-t border-slate-50">
+              <button @click="openEditModal(item)" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
+                <Icon name="ph:pencil-simple-bold" />
+                <span>Ubah</span>
+              </button>
+              <button @click="removeItem(item.id)" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors">
+                <Icon name="ph:trash-bold" />
+                <span>Hapus</span>
+              </button>
+            </div>
+          </div>
+          <div v-if="items.length === 0" class="p-8 text-center text-slate-400 italic text-sm">
+            Belum ada item anggaran. Klik "Tambah Item" untuk memulai.
+          </div>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center animate-fade-in-up" style="animation-delay: 0.2s">
-        <div class="glass-card p-8">
+        <div class="glass-card p-5 sm:p-8">
           <h2 class="text-xl font-bold mb-8 text-center text-slate-700">Visualisasi Alokasi</h2>
           <ClientOnly>
-            <div class="flex justify-center">
+            <div class="flex justify-center max-w-[450px] mx-auto w-full">
               <apexchart 
                 v-if="items.length > 0"
                 type="pie" 
-                width="450" 
+                width="100%" 
                 :options="chartOptions" 
                 :series="chartSeries"
               ></apexchart>
@@ -530,7 +568,7 @@ const saveCategories = async () => {
       <div v-if="isModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="closeModal"></div>
         
-        <div class="relative w-full max-w-md glass-card p-8 shadow-2xl animate-scale-up">
+        <div class="relative w-full max-w-md glass-card p-6 sm:p-8 shadow-2xl animate-scale-up">
           <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-bold text-slate-800">
               {{ isEditing ? 'Edit Item Anggaran' : 'Tambah Item Baru' }}
@@ -609,7 +647,7 @@ const saveCategories = async () => {
       <div v-if="isCategoryModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-4">
         <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" @click="closeCategoryModal"></div>
         
-        <div class="relative w-full max-w-lg glass-card p-8 shadow-2xl animate-scale-up">
+        <div class="relative w-full max-w-lg glass-card p-6 sm:p-8 shadow-2xl animate-scale-up">
           <div class="flex justify-between items-center mb-6">
             <h3 class="text-xl font-bold text-slate-800">
               Kelola Kategori Anggaran
@@ -632,7 +670,7 @@ const saveCategories = async () => {
                 class="flex-1 w-full bg-white border border-slate-200 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-semibold text-slate-700"
               />
 
-              <div class="flex gap-1.5 items-center">
+              <div class="flex gap-1.5 items-center flex-wrap">
                 <button 
                   v-for="color in availableColors"
                   :key="color"
@@ -733,7 +771,7 @@ const saveCategories = async () => {
 
 <style scoped>
 .glass-card {
-  @apply bg-white/70 backdrop-blur-xl border border-white/40 rounded-[2rem] shadow-sm;
+  @apply bg-white/70 backdrop-blur-xl border border-white/40 rounded-2xl sm:rounded-[2rem] shadow-sm;
 }
 
 .overflow-x-auto::-webkit-scrollbar { display: none; }

@@ -2,7 +2,7 @@
   <header
     :class="[
       'fixed top-0 left-0 right-0 z-50 transition-all duration-500',
-      (scrolled || mobileOpen) ? 'glass-strong shadow-sm' : 'bg-transparent py-2',
+      scrolled || mobileOpen ? 'glass-strong shadow-sm' : 'bg-transparent py-2',
     ]"
   >
     <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -14,7 +14,6 @@
         <span class="font-outfit">Flowfund</span>
       </NuxtLink>
 
-      <!-- Desktop Navigation & Dropdown Profile -->
       <div class="hidden items-center gap-8 md:flex">
         <ul class="flex items-center gap-8">
           <li v-for="link in navLinks" :key="link.label">
@@ -32,7 +31,6 @@
           </li>
         </ul>
 
-        <!-- Profile Dropdown Component -->
         <div class="relative">
           <button
             @click="dropdownOpen = !dropdownOpen"
@@ -50,10 +48,8 @@
             />
           </button>
 
-          <!-- Click Outside Overlay -->
           <div v-if="dropdownOpen" class="fixed inset-0 z-40" @click="dropdownOpen = false"></div>
 
-          <!-- Dropdown Card -->
           <transition
             enter-active-class="transition duration-200 ease-out"
             enter-from-class="translate-y-2 opacity-0 scale-95"
@@ -66,7 +62,6 @@
               v-if="dropdownOpen"
               class="absolute right-0 mt-3 w-64 rounded-2xl glass-card bg-white/95 border border-slate-100/80 shadow-2xl shadow-slate-200/50 py-3 z-50 origin-top-right transform"
             >
-              <!-- Profile Summary header -->
               <div class="px-4 py-2 border-b border-slate-100/60 pb-3 mb-2 flex items-center gap-3">
                 <div class="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-md border border-primary/20 shadow-inner">
                   {{ userInitial }}
@@ -78,7 +73,6 @@
                 </div>
               </div>
 
-              <!-- Logout Button Container -->
               <div class="border-t border-slate-100/60 mt-3 pt-2 px-2">
                 <button
                   @click="handleLogout"
@@ -93,43 +87,29 @@
         </div>
       </div>
 
-      <!-- Mobile Menu Toggle Button -->
       <div class="flex items-center gap-4 md:hidden">
         <button
           type="button"
           @click="mobileOpen = !mobileOpen"
-          class="flex flex-col gap-1.5 p-2 rounded-lg hover:bg-slate-50 transition-colors"
+          class="w-10 h-10 rounded-full flex items-center justify-center bg-slate-50/80 hover:bg-slate-100 border border-slate-100/60 text-slate-800 transition-all active:scale-95 shadow-sm"
           :aria-label="mobileOpen ? 'Close menu' : 'Open menu'"
         >
-          <span
-            :class="[
-              'block h-0.5 w-5 bg-slate-800 transition-all duration-300',
-              mobileOpen ? 'translate-y-[5px] rotate-45' : '',
-            ]"
-          />
-          <span
-            :class="[
-              'block h-0.5 w-5 bg-slate-800 transition-all duration-300',
-              mobileOpen ? '-translate-y-[5px] -rotate-45' : '',
-            ]"
+          <Icon 
+            :name="mobileOpen ? 'lucide:x' : 'lucide:menu'" 
+            class="w-5 h-5 text-slate-600 transition-transform duration-300"
+            :class="mobileOpen ? 'rotate-90' : ''"
           />
         </button>
       </div>
     </nav>
 
-    <!-- Mobile Navigation Drawer -->
     <div
       :class="[
-        'overflow-hidden transition-all duration-500 md:hidden',
-        mobileOpen ? 'max-h-[400px]' : 'max-h-0',
+        'overflow-hidden transition-all duration-300 md:hidden',
+        mobileOpen ? 'glass-strong max-h-[380px] border-b border-slate-100 shadow-lg shadow-slate-100/50' : 'max-h-0',
       ]"
     >
-      <!-- User profile in mobile menu (staggered entry) -->
-      <div 
-        :class="[mobileOpen ? 'animate-fade-in-up opacity-0' : '']"
-        style="animation-delay: 50ms"
-        class="px-6 py-4 border-b border-slate-100/60 flex items-center gap-3.5 bg-slate-50/30"
-      >
+      <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-3.5 bg-slate-50/50">
         <div class="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-md border border-primary/20 shadow-sm">
           {{ userInitial }}
         </div>
@@ -139,32 +119,21 @@
         </div>
       </div>
 
-      <!-- Navigation links for mobile (staggered entry) -->
       <ul class="flex flex-col gap-1 px-4 py-4">
-        <li 
-          v-for="(link, index) in navLinks" 
-          :key="link.label"
-          :class="[mobileOpen ? 'animate-fade-in-up opacity-0' : '']"
-          :style="{ animationDelay: `${(index + 1) * 75}ms` }"
-        >
+        <li v-for="link in navLinks" :key="link.label">
           <NuxtLink
             :to="link.href"
             @click="mobileOpen = false"
-            class="relative px-4 py-3 text-sm font-semibold text-slate-600 hover:text-primary transition-all duration-300 rounded-xl flex items-center gap-3 group"
-            active-class="text-primary bg-primary/10 shadow-sm shadow-primary/5 font-bold"
+            class="relative px-4 py-3 text-sm font-semibold text-slate-600 hover:text-primary transition-all duration-300 rounded-xl flex items-center group"
+            active-class="text-primary bg-primary/10 shadow-sm shadow-primary/5"
           >
-            <Icon :name="link.icon" class="w-4.5 h-4.5 text-slate-400 group-[.router-link-active]:text-primary group-hover:text-primary transition-colors" />
-            <span>{{ link.label }}</span>
+            {{ link.label }}
             <span 
               class="absolute left-0 w-1 h-5 bg-primary rounded-r-full scale-y-0 transition-transform duration-300 group-[.router-link-active]:scale-y-100"
             ></span>
           </NuxtLink>
         </li>
-        <li 
-          :class="[mobileOpen ? 'animate-fade-in-up opacity-0' : '']"
-          style="animation-delay: 300ms"
-          class="pt-2 mt-2 border-t border-slate-100/60"
-        >
+        <li class="pt-2 mt-2 border-t border-slate-100">
           <button 
             @click="handleLogout"
             class="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-200"
@@ -184,16 +153,15 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const navLinks = [
-  { label: 'Dashboard', href: '/dashboard', icon: 'lucide:layout-dashboard' },
-  { label: 'Transaksi', href: '/transactions', icon: 'lucide:arrow-right-left' },
-  { label: 'Budgeting', href: '/budgeting', icon: 'lucide:calculator' },
+  { label: 'Dashboard', href: '/dashboard' },
+  { label: 'Transaksi', href: '/transactions' },
+  { label: 'Budgeting', href: '/budgeting' },
 ]
 
 const scrolled = ref(false)
 const mobileOpen = ref(false)
 const dropdownOpen = ref(false)
 
-// Access user information from cookies
 const userNameCookie = useCookie('user_name')
 const userEmailCookie = useCookie('user_email')
 

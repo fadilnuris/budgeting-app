@@ -6,7 +6,7 @@
       <div class="absolute -bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px] opacity-60"></div>
     </div>
 
-    <div class="max-w-md w-full space-y-8 glass-card bg-white/70 backdrop-blur-xl p-10 rounded-3xl shadow-2xl relative z-10 border border-white/50 animate-fade-in">
+    <div class="max-w-md w-full space-y-8 glass-card bg-white/70 backdrop-blur-xl p-6 sm:p-10 rounded-2xl sm:rounded-3xl shadow-2xl relative z-10 border border-white/50 animate-fade-in">
       <div class="text-center">
         <div class="mx-auto h-14 w-14 bg-primary rounded-2xl flex items-center justify-center shadow-lg shadow-primary/20 mb-6">
           <Icon name="lucide:user-plus" class="h-7 w-7 text-white" />
@@ -123,7 +123,7 @@
       <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity duration-300" @click="goToLogin"></div>
       
       <!-- Modal Box -->
-      <div class="max-w-md w-full bg-white/95 backdrop-blur-xl border border-white/50 rounded-3xl shadow-2xl p-8 relative z-10 text-center transform scale-100 transition-all duration-300 animate-fade-in-up">
+      <div class="max-w-md w-full bg-white/95 backdrop-blur-xl border border-white/50 rounded-2xl sm:rounded-3xl shadow-2xl p-6 sm:p-8 relative z-10 text-center transform scale-100 transition-all duration-300 animate-fade-in-up">
         <!-- Beautiful Success Icon -->
         <div class="mx-auto h-20 w-20 bg-emerald-50 rounded-full flex items-center justify-center mb-6 border border-emerald-100 shadow-inner">
           <div class="h-16 w-16 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30">
