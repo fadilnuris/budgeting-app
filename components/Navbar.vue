@@ -2,7 +2,7 @@
   <header
     :class="[
       'fixed top-0 left-0 right-0 z-50 transition-all duration-500',
-      scrolled ? 'glass-strong shadow-sm' : 'bg-transparent py-2',
+      (scrolled || mobileOpen) ? 'glass-strong shadow-sm' : 'bg-transparent py-2',
     ]"
   >
     <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -120,12 +120,16 @@
     <!-- Mobile Navigation Drawer -->
     <div
       :class="[
-        'overflow-hidden transition-all duration-300 md:hidden',
-        mobileOpen ? 'glass-strong max-h-[380px] border-b border-slate-100 shadow-lg shadow-slate-100/50' : 'max-h-0',
+        'overflow-hidden transition-all duration-500 md:hidden',
+        mobileOpen ? 'max-h-[400px]' : 'max-h-0',
       ]"
     >
-      <!-- User profile in mobile menu -->
-      <div class="px-6 py-4 border-b border-slate-100 flex items-center gap-3.5 bg-slate-50/50">
+      <!-- User profile in mobile menu (staggered entry) -->
+      <div 
+        :class="[mobileOpen ? 'animate-fade-in-up opacity-0' : '']"
+        style="animation-delay: 50ms"
+        class="px-6 py-4 border-b border-slate-100/60 flex items-center gap-3.5 bg-slate-50/30"
+      >
         <div class="w-10 h-10 rounded-full bg-primary/10 text-primary font-bold flex items-center justify-center text-md border border-primary/20 shadow-sm">
           {{ userInitial }}
         </div>
@@ -135,22 +139,32 @@
         </div>
       </div>
 
-      <!-- Navigation links for mobile -->
+      <!-- Navigation links for mobile (staggered entry) -->
       <ul class="flex flex-col gap-1 px-4 py-4">
-        <li v-for="link in navLinks" :key="link.label">
+        <li 
+          v-for="(link, index) in navLinks" 
+          :key="link.label"
+          :class="[mobileOpen ? 'animate-fade-in-up opacity-0' : '']"
+          :style="{ animationDelay: `${(index + 1) * 75}ms` }"
+        >
           <NuxtLink
             :to="link.href"
             @click="mobileOpen = false"
-            class="relative px-4 py-3 text-sm font-semibold text-slate-600 hover:text-primary transition-all duration-300 rounded-xl flex items-center group"
-            active-class="text-primary bg-primary/10 shadow-sm shadow-primary/5"
+            class="relative px-4 py-3 text-sm font-semibold text-slate-600 hover:text-primary transition-all duration-300 rounded-xl flex items-center gap-3 group"
+            active-class="text-primary bg-primary/10 shadow-sm shadow-primary/5 font-bold"
           >
-            {{ link.label }}
+            <Icon :name="link.icon" class="w-4.5 h-4.5 text-slate-400 group-[.router-link-active]:text-primary group-hover:text-primary transition-colors" />
+            <span>{{ link.label }}</span>
             <span 
               class="absolute left-0 w-1 h-5 bg-primary rounded-r-full scale-y-0 transition-transform duration-300 group-[.router-link-active]:scale-y-100"
             ></span>
           </NuxtLink>
         </li>
-        <li class="pt-2 mt-2 border-t border-slate-100">
+        <li 
+          :class="[mobileOpen ? 'animate-fade-in-up opacity-0' : '']"
+          style="animation-delay: 300ms"
+          class="pt-2 mt-2 border-t border-slate-100/60"
+        >
           <button 
             @click="handleLogout"
             class="w-full flex items-center gap-2.5 px-4 py-3 text-sm font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all duration-200"
@@ -170,9 +184,9 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const navLinks = [
-  { label: 'Dashboard', href: '/dashboard' },
-  { label: 'Transaksi', href: '/transactions' },
-  { label: 'Budgeting', href: '/budgeting' },
+  { label: 'Dashboard', href: '/dashboard', icon: 'lucide:layout-dashboard' },
+  { label: 'Transaksi', href: '/transactions', icon: 'lucide:arrow-right-left' },
+  { label: 'Budgeting', href: '/budgeting', icon: 'lucide:calculator' },
 ]
 
 const scrolled = ref(false)
