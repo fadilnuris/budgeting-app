@@ -164,14 +164,39 @@ const dropdownOpen = ref(false)
 
 const userNameCookie = useCookie('user_name')
 const userEmailCookie = useCookie('user_email')
+const userIdCookie = useCookie('user_id')
 
-const userName = computed(() => userNameCookie.value || 'Pengguna Flowfund')
-const userEmail = computed(() => userEmailCookie.value || 'pengguna@flowfund.com')
+const profileName = ref('')
+const profileEmail = ref('')
+
+const userName = computed(() => profileName.value || userNameCookie.value || 'Pengguna Flowfund')
+const userEmail = computed(() => profileEmail.value || userEmailCookie.value || 'pengguna@flowfund.com')
 
 const userInitial = computed(() => {
   const name = userName.value
   return name ? name.trim().charAt(0).toUpperCase() : 'P'
 })
+
+const fetchProfile = async () => {
+  const userId = userIdCookie.value
+  if (!userId) return
+  
+  try {
+    const response: any = await $fetch('https://budgeting-api.up.railway.app/profile', {
+      params: { user_id: userId }
+    })
+    if (response?.data) {
+      profileName.value = response.data.name || response.data.Name || ''
+      profileEmail.value = response.data.email || response.data.Email || ''
+      
+      // Sync back to cookies to keep cached values up-to-date
+      userNameCookie.value = profileName.value
+      userEmailCookie.value = profileEmail.value
+    }
+  } catch (error) {
+    console.error('Failed to fetch profile:', error)
+  }
+}
 
 const handleLogout = () => {
   const authToken = useCookie('auth_token')
@@ -197,6 +222,7 @@ const handleScroll = () => {
 
 onMounted(() => {
   handleScroll()
+  fetchProfile()
   window.addEventListener('scroll', handleScroll, { passive: true })
 })
 

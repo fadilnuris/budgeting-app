@@ -2,19 +2,55 @@
 import Navbar from '~/components/Navbar.vue';
 import type { BudgetItem, BudgetCategory, BudgetPlan } from '~/types/budget'
 
+type TransactionItem = {
+  ID?: number
+  Type: 'income' | 'expense'
+  Amount: number
+  Note?: string
+  Date?: string
+  date?: string
+  CreatedAt?: string
+}
+
 const income = ref(0)
 const items = ref<BudgetItem[]>([])
 const isLoading = ref(true)
 const isSaving = ref(false)
+const isIncomeSaved = ref(false)
+const isDirty = ref(false)
+const savedIncomeAmount = ref(0)
+const actualMonthlyIncome = ref(0)
+const isLoadingTransactionIncome = ref(false)
 const currentMonth = ref(new Date().toISOString().slice(0, 7)) // YYYY-MM
 const userIdCookie = useCookie('user_id')
 const userId = parseInt(userIdCookie.value || '0', 10)
 
-const categories = ref<BudgetCategory[]>([
+const defaultCategories: BudgetCategory[] = [
   { name: 'Tabungan', color: 'blue' },
   { name: 'Kebutuhan', color: 'amber' },
-  { name: 'Keinginan', color: 'pink' }
-])
+  { name: 'Keinginan', color: 'pink' },
+  { name: 'Pemborosan', color: 'purple' }
+]
+
+const ensureDefaultCategories = (incoming?: BudgetCategory[]) => {
+  const source = incoming && incoming.length > 0 ? incoming : []
+  const merged = [...source]
+
+  defaultCategories.forEach(defaultCat => {
+    if (!merged.some(cat => cat.name === defaultCat.name)) {
+      merged.push({ ...defaultCat })
+    }
+  })
+
+  return merged
+}
+
+const categories = ref<BudgetCategory[]>(ensureDefaultCategories())
+
+const markIncomeChanged = () => {
+  isDirty.value = true
+  isIncomeSaved.value = false
+}
 
 const formattedIncome = computed({
   get() {
@@ -27,7 +63,11 @@ const formattedIncome = computed({
   },
   set(val: string) {
     const number = parseInt(val.replace(/[^0-9]/g, ''), 10)
-    income.value = isNaN(number) ? 0 : number
+    const nextIncome = isNaN(number) ? 0 : number
+    if (nextIncome !== income.value) {
+      income.value = nextIncome
+      markIncomeChanged()
+    }
   }
 })
 
@@ -60,6 +100,7 @@ const categoryModalList = ref<BudgetCategory[]>([])
 const availableColors = ['blue', 'amber', 'pink', 'purple', 'emerald', 'teal']
 
 const totalAllocated = computed(() => {
+  if (!canManageBudget.value) return 0
   return items.value.reduce((sum, item) => sum + (item.nominal || 0), 0)
 })
 
@@ -68,6 +109,15 @@ const remainingMoney = computed(() => {
 })
 
 const summaryByCategory = computed(() => {
+  if (!canManageBudget.value) {
+    return categories.value.map(cat => ({
+      name: cat.name,
+      nominal: 0,
+      percentage: 0,
+      color: cat.color
+    }))
+  }
+
   const summary = items.value.reduce((acc, item) => {
     acc[item.category] = (acc[item.category] || 0) + (item.nominal || 0)
     return acc;
@@ -81,6 +131,80 @@ const summaryByCategory = computed(() => {
   }))
 })
 
+const chartSummary = computed(() => {
+  const base = summaryByCategory.value.filter(summary => summary.nominal > 0)
+
+  if (income.value > totalAllocated.value) {
+    return [
+      ...base,
+      {
+        name: 'Belum Dialokasikan',
+        nominal: income.value - totalAllocated.value,
+        percentage: income.value > 0 ? ((income.value - totalAllocated.value) / income.value) * 100 : 0,
+        color: 'slate'
+      }
+    ]
+  }
+
+  return base
+})
+
+const canManageBudget = computed(() => isIncomeSaved.value && income.value > 0)
+
+const incomeStatusLabel = computed(() => {
+  if (isSaving.value) return 'Menyimpan pemasukan...'
+  if (isIncomeSaved.value) return 'Pemasukan tersimpan'
+  if (savedIncomeAmount.value > 0 && income.value !== savedIncomeAmount.value) {
+    return 'Pemasukan berubah, simpan ulang untuk melanjutkan'
+  }
+  return 'Simpan pemasukan terlebih dahulu'
+})
+
+const budgetStatusLabel = computed(() => {
+  if (!canManageBudget.value) {
+    return 'Simpan pemasukan terlebih dahulu untuk mulai membuat alokasi anggaran.'
+  }
+  return ''
+})
+
+const getTransactionMonth = (transaction: TransactionItem) => {
+  const rawDate = transaction.Date || transaction.date || transaction.CreatedAt || ''
+  if (!rawDate) return ''
+  if (/^\d{4}-\d{2}/.test(rawDate)) return rawDate.slice(0, 7)
+
+  const parsedDate = new Date(rawDate)
+  if (Number.isNaN(parsedDate.getTime())) return ''
+  return `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`
+}
+
+const fetchMonthlyTransactionIncome = async () => {
+  isLoadingTransactionIncome.value = true
+  try {
+    const response = await $fetch<{ data: TransactionItem[] }>('https://budgeting-api.up.railway.app/transactions', {
+      params: { user_id: userId }
+    })
+
+    actualMonthlyIncome.value = (response.data || []).reduce((sum, transaction) => {
+      const isCurrentMonth = getTransactionMonth(transaction) === currentMonth.value
+      return transaction.Type === 'income' && isCurrentMonth ? sum + (transaction.Amount || 0) : sum
+    }, 0)
+  } catch (e) {
+    console.error('Failed to fetch monthly transaction income:', e)
+    actualMonthlyIncome.value = 0
+  } finally {
+    isLoadingTransactionIncome.value = false
+  }
+}
+
+const useTransactionIncome = () => {
+  if (actualMonthlyIncome.value <= 0) return
+
+  if (income.value !== actualMonthlyIncome.value) {
+    income.value = actualMonthlyIncome.value
+    markIncomeChanged()
+  }
+}
+
 const fetchBudget = async () => {
   isLoading.value = true
   try {
@@ -91,21 +215,17 @@ const fetchBudget = async () => {
     if (response.data) {
       income.value = response.data.income
       items.value = response.data.items || []
-      categories.value = response.data.categories && response.data.categories.length > 0
-        ? response.data.categories
-        : [
-            { name: 'Tabungan', color: 'blue' },
-            { name: 'Kebutuhan', color: 'amber' },
-            { name: 'Keinginan', color: 'pink' }
-          ]
+      categories.value = ensureDefaultCategories(response.data.categories)
+      savedIncomeAmount.value = response.data.income || 0
+      isIncomeSaved.value = (response.data.income || 0) > 0
+      isDirty.value = false
     } else {
       income.value = 0
       items.value = []
-      categories.value = [
-        { name: 'Tabungan', color: 'blue' },
-        { name: 'Kebutuhan', color: 'amber' },
-        { name: 'Keinginan', color: 'pink' }
-      ]
+      categories.value = ensureDefaultCategories()
+      savedIncomeAmount.value = 0
+      isIncomeSaved.value = false
+      isDirty.value = false
     }
   } catch (e) {
     console.error('Failed to fetch budget:', e)
@@ -114,7 +234,12 @@ const fetchBudget = async () => {
   }
 }
 
-const saveBudget = async () => {
+const saveBudget = async (successMessage = 'Pemasukan berhasil disimpan!') => {
+  if (income.value <= 0) {
+    alert('Pemasukan wajib diisi dan harus lebih dari 0.')
+    return
+  }
+
   isSaving.value = true
   try {
     await $fetch('https://budgeting-api.up.railway.app/budget', {
@@ -127,7 +252,10 @@ const saveBudget = async () => {
         categories: categories.value
       }
     })
-    alert('Anggaran dan Kategori berhasil disimpan!')
+    savedIncomeAmount.value = income.value
+    isIncomeSaved.value = true
+    isDirty.value = false
+    alert(successMessage)
     await fetchBudget()
   } catch (e) {
     console.error('Failed to save budget:', e)
@@ -139,6 +267,7 @@ const saveBudget = async () => {
 
 onMounted(() => {
   fetchBudget()
+  fetchMonthlyTransactionIncome()
 })
 
 const formatCurrency = (val: number) => {
@@ -159,28 +288,35 @@ const getCategoryClass = (categoryName: string) => {
     case 'purple': return 'bg-purple-100 text-purple-700'
     case 'emerald': return 'bg-emerald-100 text-emerald-700'
     case 'teal': return 'bg-teal-100 text-teal-700'
+    case 'slate': return 'bg-slate-100 text-slate-500'
     default: return 'bg-gray-100 text-gray-700'
   }
 }
 
+const getCategoryHex = (color: string) => {
+  switch (color) {
+    case 'blue': return '#93C5FD'
+    case 'amber': return '#FCD34D'
+    case 'pink': return '#F9A8D4'
+    case 'purple': return '#C084FC'
+    case 'emerald': return '#34D399'
+    case 'teal': return '#2DD4BF'
+    case 'slate': return '#CBD5E1'
+    default: return '#CBD5E1'
+  }
+}
+
 const chartOptions = computed(() => ({
-  labels: categories.value.map(c => c.name),
-  colors: categories.value.map(c => {
-    switch (c.color) {
-      case 'blue': return '#93C5FD'
-      case 'amber': return '#FCD34D'
-      case 'pink': return '#F9A8D4'
-      case 'purple': return '#C084FC'
-      case 'emerald': return '#34D399'
-      case 'teal': return '#2DD4BF'
-      default: return '#CBD5E1'
-    }
-  }),
+  labels: chartSummary.value.map(c => c.name),
+  colors: chartSummary.value.map(c => getCategoryHex(c.color)),
   legend: { position: 'bottom' },
   chart: { fontFamily: 'Inter, sans-serif' },
   dataLabels: {
     enabled: true,
-    formatter: (val: number) => val.toFixed(1) + '%'
+    formatter: (_val: number, opts: any) => {
+      const nominal = opts.w.config.series[opts.seriesIndex] || 0
+      return income.value > 0 ? `${((nominal / income.value) * 100).toFixed(1)}%` : '0.0%'
+    }
   },
   tooltip: {
     y: { formatter: (val: number) => formatCurrency(val) }
@@ -188,10 +324,15 @@ const chartOptions = computed(() => ({
 }))
 
 const chartSeries = computed(() => {
-  return summaryByCategory.value.map(s => s.nominal)
+  return chartSummary.value.map(s => s.nominal)
 })
 
 const openAddModal = () => {
+  if (!canManageBudget.value) {
+    alert('Simpan pemasukan terlebih dahulu sebelum menambahkan alokasi.')
+    return
+  }
+
   isEditing.value = false
   const defaultCategory = categories.value[0]?.name || 'Kebutuhan'
   modalItem.value = { name: '', nominal: 0, category: defaultCategory }
@@ -199,6 +340,11 @@ const openAddModal = () => {
 }
 
 const openEditModal = (item: BudgetItem) => {
+  if (!canManageBudget.value) {
+    alert('Simpan pemasukan terlebih dahulu sebelum menambahkan alokasi.')
+    return
+  }
+
   isEditing.value = true
   modalItem.value = { ...item }
   isModalOpen.value = true
@@ -209,8 +355,20 @@ const closeModal = () => {
 }
 
 const saveModalItem = async () => {
+  if (!canManageBudget.value) {
+    alert('Simpan pemasukan terlebih dahulu sebelum menambahkan alokasi.')
+    return
+  }
+
   if (!modalItem.value.name || modalItem.value.nominal <= 0) {
     alert('Mohon isi nama dan nominal dengan benar.')
+    return
+  }
+
+  const currentItemNominal = isEditing.value ? items.value.find(item => item.id === modalItem.value.id)?.nominal || 0 : 0
+  const nextTotalAllocated = totalAllocated.value - currentItemNominal + modalItem.value.nominal
+  if (nextTotalAllocated > income.value) {
+    alert('Total alokasi tidak boleh melebihi total pemasukan.')
     return
   }
 
@@ -252,6 +410,11 @@ const showDeleteModal = ref(false)
 const itemToDelete = ref<number | null>(null)
 
 const removeItem = (id?: number) => {
+  if (!canManageBudget.value) {
+    alert('Simpan pemasukan terlebih dahulu sebelum menambahkan alokasi.')
+    return
+  }
+
   if (!id) return
   itemToDelete.value = id
   showDeleteModal.value = true
@@ -275,6 +438,11 @@ const handleConfirmDelete = async () => {
 }
 
 const openCategoryModal = () => {
+  if (!canManageBudget.value) {
+    alert('Simpan pemasukan terlebih dahulu sebelum menambahkan alokasi.')
+    return
+  }
+
   categoryModalList.value = JSON.parse(JSON.stringify(categories.value))
   isCategoryModalOpen.value = true
 }
@@ -313,9 +481,92 @@ const saveCategories = async () => {
   })
 
   categories.value = JSON.parse(JSON.stringify(categoryModalList.value))
-  await saveBudget()
+  await saveBudget('Kategori berhasil disimpan!')
   closeCategoryModal()
 }
+
+const formatMonthLabel = (monthStr: string) => {
+  if (!monthStr) return ''
+  const [yearStr, monthStr2] = monthStr.split('-')
+  if (!yearStr || !monthStr2) return monthStr
+  const date = new Date(parseInt(yearStr, 10), parseInt(monthStr2, 10) - 1)
+  return date.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+}
+
+const handleMonthChange = async () => {
+  await Promise.all([
+    fetchBudget(),
+    fetchMonthlyTransactionIncome()
+  ])
+}
+
+const allocationPercentage = computed(() => {
+  if (income.value <= 0) return 0
+  return (totalAllocated.value / income.value) * 100
+})
+
+const isAllocationAlmostFull = computed(() => allocationPercentage.value >= 80 && allocationPercentage.value <= 100)
+
+const dynamicOverviewTips = computed(() => {
+  if (income.value <= 0) {
+    return 'Silakan masukkan dan simpan pemasukan bulanan Anda terlebih dahulu untuk mengaktifkan analisis anggaran.'
+  }
+
+  const sisa = remainingMoney.value
+  const sisaPersen = (sisa / income.value) * 100
+  const totalAllocPct = allocationPercentage.value
+
+  // Helper untuk mencari persentase kategori
+  const getCatPct = (name: string) => summaryByCategory.value.find(s => s.name === name)?.percentage || 0
+
+  const tabunganPct = getCatPct('Tabungan')
+  const keinginanPct = getCatPct('Keinginan')
+  const pemborosanPct = getCatPct('Pemborosan')
+
+  // Kondisi 1: Defisit
+  if (sisa < 0) {
+    let advice = `<strong>Peringatan Defisit:</strong> Alokasi pengeluaran Anda melebihi pemasukan sebesar <strong>${formatCurrency(Math.abs(sisa))}</strong>.`
+    if (pemborosanPct > 0) {
+      advice += ` Coba kurangi atau hapus alokasi di kategori <strong>Pemborosan</strong> (saat ini ${pemborosanPct.toFixed(1)}%) untuk menyeimbangkan anggaran.`
+    } else if (keinginanPct > 30) {
+      advice += ` Pertimbangkan untuk membatasi pengeluaran di kategori <strong>Keinginan</strong> yang saat ini mencapai ${keinginanPct.toFixed(1)}% (ideal: max 30%).`
+    } else {
+      advice += ` Harap kurangkan nominal alokasi beberapa item belanja Anda.`
+    }
+    return advice
+  }
+
+  // Kondisi 2: Anggaran Pas (Zero-Based)
+  if (sisa === 0) {
+    if (tabunganPct < 20) {
+      return `<strong>Anggaran Pas:</strong> Luar biasa! Seluruh pemasukan teralokasi habis (Zero-Based). Namun, alokasi <strong>Tabungan</strong> Anda baru ${tabunganPct.toFixed(1)}% (ideal: min 20%). Coba tingkatkan porsi tabungan di bulan berikutnya.`
+    }
+    return `<strong>Anggaran Pas:</strong> Sempurna! Seluruh pemasukan Anda telah teralokasi habis tanpa sisa. Setiap rupiah kini memiliki tugasnya masing-masing!`
+  }
+
+  // Kondisi 3: Alokasi Hampir Penuh (>= 80% s.d. 99%)
+  if (totalAllocPct >= 80) {
+    if (tabunganPct < 20) {
+      return `<strong>Alokasi Padat:</strong> Anda menyisakan <strong>${formatCurrency(sisa)}</strong> (${sisaPersen.toFixed(1)}%). Karena alokasi <strong>Tabungan</strong> baru ${tabunganPct.toFixed(1)}%, sebaiknya sisa ini dipindahkan ke tabungan untuk memperkuat keamanan finansial.`
+    }
+    return `<strong>Alokasi Padat:</strong> Anda menyisakan <strong>${formatCurrency(sisa)}</strong> (${sisaPersen.toFixed(1)}%). Pastikan sisa dana ini dialokasikan untuk kebutuhan tak terduga (dana darurat).`
+  }
+
+  // Kondisi 4: Surplus Sehat & Aman (< 80%)
+  if (tabunganPct < 20) {
+    return `<strong>Tips Flowfund:</strong> Anggaran aman! Anda memiliki sisa <strong>${formatCurrency(sisa)}</strong> (${sisaPersen.toFixed(1)}%). Karena alokasi <strong>Tabungan</strong> Anda baru ${tabunganPct.toFixed(1)}%, sangat disarankan memindahkan sisa ini ke kategori <strong>Tabungan</strong> agar mencapai target minimal 20% (ideal).`
+  }
+
+  if (pemborosanPct > 5) {
+    return `<strong>Tips Flowfund:</strong> Anggaran aman dengan sisa <strong>${formatCurrency(sisa)}</strong> (${sisaPersen.toFixed(1)}%). Namun, alokasi <strong>Pemborosan</strong> Anda cukup tinggi (${pemborosanPct.toFixed(1)}%). Batasi pemborosan agar sisa uang Anda bisa dialihkan ke investasi produktif.`
+  }
+
+  return `<strong>Tips Flowfund:</strong> Kerja bagus! Alokasi <strong>Tabungan</strong> Anda sudah sangat aman (${tabunganPct.toFixed(1)}%). Sisa uang sebesar <strong>${formatCurrency(sisa)}</strong> (${sisaPersen.toFixed(1)}%) ini bebas Anda investasikan atau gunakan untuk tujuan finansial jangka panjang!`
+})
+
+useHead({
+  title: 'Budgeting'
+})
 </script>
 
 <template>
@@ -328,108 +579,304 @@ const saveCategories = async () => {
     </div>
 
     <div v-else class="max-w-7xl mx-auto w-full flex-1 flex flex-col">
-      <div class="flex flex-col md:flex-row justify-between items-start mb-10 gap-6 animate-fade-in-up">
-        <div class="glass-card p-5 sm:p-6 flex-1 w-full md:w-auto">
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 class="text-xl font-bold flex items-center gap-2">
-              <Icon name="ph:calendar-bold" class="text-blue-500" />
-              Budgeting Overview
-            </h2>
-            <button @click="saveBudget" :disabled="isSaving" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-emerald-100 disabled:opacity-50">
-              <span v-if="isSaving">Menyimpan...</span>
-              <span v-else class="flex items-center gap-2">
-                <Icon name="ph:floppy-disk-bold" />
-                Simpan
-              </span>
-            </button>
-          </div>
-          <div class="grid grid-cols-2 gap-y-3 text-sm">
-            <div class="text-slate-500">Bulan</div>
-            <div class="text-right">
-              <input 
-                v-model="currentMonth" 
-                type="month" 
-                @change="fetchBudget"
-                class="bg-transparent border-none text-right font-semibold text-slate-700 outline-none cursor-pointer"
-              />
-            </div>
-            
-            <div class="text-slate-500">Pemasukan</div>
-            <div class="text-right">
-              <input 
-                v-model="formattedIncome" 
-                type="text" 
-                class="w-full text-right bg-transparent border-b border-dashed border-slate-300 focus:border-blue-500 outline-none font-semibold text-blue-600"
-                placeholder="Rp0"
-              />
-            </div>
-            
-            <div class="text-slate-500">Uang Dialokasikan</div>
-            <div class="font-semibold text-right">{{ formatCurrency(totalAllocated) }}</div>
-            
-            <div class="text-slate-500 pt-2 border-t border-slate-100">Sisa Uang</div>
-            <div class="font-bold text-right pt-2 border-t border-slate-100" :class="remainingMoney < 0 ? 'text-red-500' : 'text-emerald-500'">
-              {{ formatCurrency(remainingMoney) }}
-            </div>
-          </div>
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4 animate-fade-in-up relative z-50">
+        <div>
+          <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight mb-2">Perencanaan Anggaran</h1>
+           <p class="text-sm font-medium text-slate-400 mt-1">
+            Alokasikan pemasukan bulanan Anda ke berbagai kebutuhan, keinginan, dan tabungan secara cerdas.
+          </p>
         </div>
 
-        <div class="glass-card p-5 sm:p-6 flex-[1.5] w-full md:w-auto">
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 class="text-xl font-bold flex items-center gap-2">
-              <Icon name="ph:chart-pie-slice-bold" class="text-amber-500" />
-              Ringkasan Kategori
-            </h2>
-            <button @click="openCategoryModal" class="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all font-semibold">
-              <Icon name="ph:gear-six-bold" />
-              Kelola Kategori
-            </button>
+        <div class="flex items-center gap-3 w-full md:w-auto self-stretch md:self-auto justify-between md:justify-end">
+          <MonthPicker 
+            v-model="currentMonth" 
+            @change="handleMonthChange" 
+          />
+
+          <button 
+            v-if="!isIncomeSaved || isDirty"
+            @click="() => saveBudget()" 
+            :disabled="isSaving || income <= 0" 
+            class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-sm font-bold transition-all shadow-md hover:shadow-lg shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center gap-2"
+          >
+            <Icon v-if="isSaving" name="ph:circle-notch-bold" class="animate-spin w-4 h-4" />
+            <Icon v-else name="ph:floppy-disk-bold" class="w-4 h-4" />
+            <span>{{ isSaving ? 'Menyimpan...' : 'Simpan Pemasukan' }}</span>
+          </button>
+          <div v-else class="px-4 py-2.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-xl text-sm font-bold flex items-center gap-2">
+            <Icon name="ph:check-circle-bold" class="w-4 h-4" />
+            <span>Semua perubahan tersimpan</span>
           </div>
-          <table class="w-full text-sm">
-            <thead>
-              <tr class="text-slate-400 text-left border-b border-slate-100">
-                <th class="pb-2 font-medium">Kategori</th>
-                <th class="pb-2 font-medium text-right">Nominal</th>
-                <th class="pb-2 font-medium text-right">Persentase</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="cat in categories" :key="cat.name" class="border-b border-slate-50/50 last:border-0">
-                <td class="py-3">
-                  <span :class="getCategoryClass(cat.name)" class="px-3 py-1 rounded-full text-xs font-semibold">
-                    {{ cat.name }}
-                  </span>
-                </td>
-                <td class="py-3 text-right font-medium">
-                  {{ formatCurrency(summaryByCategory.find(s => s.name === cat.name)?.nominal || 0) }}
-                </td>
-                <td class="py-3 text-right text-slate-500">
-                  {{ (summaryByCategory.find(s => s.name === cat.name)?.percentage || 0).toFixed(2) }}%
-                </td>
-              </tr>
-            </tbody>
-          </table>
         </div>
       </div>
 
-      <div class="glass-card p-0 overflow-hidden mb-10 animate-fade-in-up" style="animation-delay: 0.1s">
+      <div class="mb-6 animate-fade-in-up rounded-2xl border border-emerald-100 bg-emerald-50/70 px-4 py-3 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="flex items-start gap-3 min-w-0">
+          <div class="mt-0.5 w-9 h-9 rounded-xl bg-white text-emerald-600 flex items-center justify-center shadow-sm shrink-0">
+            <Icon name="ph:arrows-left-right-bold" class="w-4 h-4" />
+          </div>
+          <div class="min-w-0">
+            <p class="text-xs font-bold uppercase tracking-wider text-emerald-700">Referensi dari transaksi bulan ini</p>
+            <div class="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <p class="text-lg font-extrabold text-emerald-700">
+                <span v-if="isLoadingTransactionIncome">Memuat...</span>
+                <span v-else>{{ formatCurrency(actualMonthlyIncome) }}</span>
+              </p>
+              <span class="text-xs font-medium text-emerald-700/70">
+                Bisa dipakai sebagai Pemasukan Rencana {{ formatMonthLabel(currentMonth) }}.
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          @click="useTransactionIncome"
+          :disabled="isLoadingTransactionIncome || actualMonthlyIncome <= 0"
+          class="w-full sm:w-auto shrink-0 rounded-xl bg-white px-4 py-2 text-xs font-bold text-emerald-700 shadow-sm border border-emerald-100 hover:bg-emerald-100 transition-all disabled:opacity-50 disabled:pointer-events-none"
+        >
+          Gunakan dari Transaksi
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-5 gap-8 mb-10 items-stretch animate-fade-in-up">
+        <div class="glass-card p-6 lg:col-span-3 flex flex-col justify-between w-full">
+          <div>
+            <div class="flex items-center justify-between gap-3 mb-6">
+              <h2 class="text-xl font-bold flex items-center gap-2 text-slate-800">
+                <Icon name="ph:squares-four-bold" class="text-primary" />
+                Budgeting Overview
+                <div class="relative group/tooltip inline-block">
+                  <Icon name="ph:info-bold" class="text-slate-300 hover:text-slate-500 w-4 h-4 transition-colors mt-0.5 cursor-pointer" />
+                  <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-50 text-center font-medium leading-relaxed normal-case tracking-normal">
+                    Rangkuman perencanaan anggaran bulanan Anda, memuat ringkasan pemasukan, alokasi, sisa uang, serta status kelayakan dana secara waktu nyata.
+                    <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95"></div>
+                  </div>
+                </div>
+              </h2>
+            </div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div class="glass-card bg-white p-4 rounded-2xl border border-blue-100/90 flex flex-col justify-between shadow-md shadow-blue-100/40 relative group overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-blue-100/60 hover:scale-[1.01] sm:col-span-3 lg:col-span-1">
+                <div>
+                  <div class="flex items-center justify-between gap-2 mb-2">
+                    <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      <Icon name="ph:wallet-bold" class="text-blue-500 w-3.5 h-3.5" />
+                      <span>Pemasukan</span>
+                    </div>
+                    <span 
+                      :class="isIncomeSaved ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'"
+                      class="px-2 py-0.5 rounded-full border text-[9px] font-bold"
+                    >
+                      {{ isIncomeSaved ? 'Tersimpan' : 'Perlu disimpan' }}
+                    </span>
+                  </div>
+                  
+                  <div class="relative mt-2">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm">Rp</span>
+                    <input 
+                      v-model="formattedIncome" 
+                      type="text" 
+                      class="w-full pl-8 pr-7 py-2 bg-slate-50/50 hover:bg-slate-50 focus:bg-white border border-slate-200/80 focus:border-primary focus:ring-2 focus:ring-primary/10 rounded-xl outline-none font-bold text-slate-800 text-sm transition-all"
+                      placeholder="0"
+                    />
+                    <div class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-primary transition-colors">
+                      <Icon name="ph:pencil-simple-line-bold" class="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+
+                </div>
+                
+                <p 
+                  :class="isIncomeSaved ? 'text-emerald-600' : 'text-slate-400'"
+                  class="mt-3 text-[10px] flex items-center gap-1 font-medium"
+                >
+                  <Icon :name="isIncomeSaved ? 'ph:check-circle-bold' : 'ph:info-bold'" />
+                  {{ incomeStatusLabel }}
+                </p>
+              </div>
+
+              <div class="glass-card bg-white p-4 rounded-2xl border border-slate-100/80 flex flex-col justify-between shadow-sm relative group overflow-hidden transition-all duration-300 hover:shadow-md hover:scale-[1.01]">
+                <div>
+                  <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    <Icon name="ph:hand-coins-bold" class="text-amber-500 w-3.5 h-3.5" />
+                    <span>Uang Dialokasikan</span>
+                  </div>
+                  
+                  <div class="mt-3.5 text-base font-extrabold text-slate-800 tracking-tight">
+                    {{ formatCurrency(totalAllocated) }}
+                  </div>
+                </div>
+                
+                <p class="mt-3 text-[10px] text-slate-400 flex items-center gap-1 font-medium">
+                  <Icon name="ph:list-checks-bold" class="text-amber-500" />
+                  Dari {{ items.length }} alokasi item
+                </p>
+              </div>
+
+              <div class="glass-card bg-white p-4 rounded-2xl border border-slate-100/80 flex flex-col justify-between shadow-sm relative group overflow-hidden transition-all duration-300 hover:shadow-md hover:scale-[1.01]">
+                <div>
+                  <div class="flex items-center gap-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                    <Icon 
+                      :name="remainingMoney < 0 ? 'ph:warning-circle-bold' : 'ph:check-circle-bold'" 
+                      :class="remainingMoney < 0 ? 'text-rose-500' : 'text-emerald-500'" 
+                      class="w-3.5 h-3.5" 
+                    />
+                    <span>Sisa Pemasukan</span>
+                  </div>
+                  
+                  <div 
+                    :class="[
+                      remainingMoney < 0 ? 'text-rose-600' : 'text-emerald-600'
+                    ]"
+                    class="mt-3.5 text-base font-extrabold tracking-tight"
+                  >
+                    {{ formatCurrency(remainingMoney) }}
+                  </div>
+                </div>
+                
+                <p class="mt-3 text-[10px] flex items-center gap-1 font-semibold truncate" :class="remainingMoney < 0 ? 'text-rose-500' : 'text-emerald-600'">
+                  <Icon :name="remainingMoney < 0 ? 'ph:x-circle-bold' : 'ph:sparkles-bold'" />
+                  <span v-if="remainingMoney > 0">Ada sisa, siap tabung! 🚀</span>
+                  <span v-else-if="remainingMoney === 0">Anggaran pas 🎯</span>
+                  <span v-else>Defisit! Kurangi alokasi ⚠️</span>
+                </p>
+              </div>
+            </div>
+
+            <div class="mt-6 pt-5 border-t border-slate-100/80">
+              <div class="flex items-center justify-between text-[11px] font-bold text-slate-500 mb-2">
+                <div class="flex items-center gap-1.5">
+                  <Icon name="ph:chart-bar-horizontal-bold" class="text-primary w-4 h-4" />
+                  <span>Persentase Alokasi Uang</span>
+                </div>
+                <span 
+                  :class="[
+                    allocationPercentage > 100 ? 'text-rose-500' : 
+                    allocationPercentage >= 80 ? 'text-amber-500' : 
+                    'text-primary'
+                  ]"
+                >
+                  {{ allocationPercentage.toFixed(1) }}%
+                </span>
+              </div>
+              
+              <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner relative">
+                <div 
+                  :style="{ width: `${Math.min(allocationPercentage, 100)}%` }"
+                  :class="[
+                    allocationPercentage > 100 ? 'bg-gradient-to-r from-rose-500 to-red-600 shadow-[0_0_12px_rgba(239,68,68,0.4)]' : 
+                    allocationPercentage >= 80 ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-[0_0_12px_rgba(245,158,11,0.4)]' : 
+                    'bg-gradient-to-r from-primary to-indigo-500 shadow-[0_0_12px_rgba(59,130,246,0.4)]'
+                  ]"
+                  class="h-full rounded-full transition-all duration-500 ease-out"
+                ></div>
+              </div>
+
+              <div class="flex items-start gap-2 mt-3.5 text-[11px] leading-relaxed text-slate-400">
+                <Icon name="ph:lightbulb-bold" class="text-amber-500 shrink-0 mt-0.5" />
+                <span v-html="dynamicOverviewTips"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass-card p-6 lg:col-span-2 flex flex-col justify-between w-full">
+          <div>
+            <div class="flex items-center justify-between gap-3 mb-6">
+              <h2 class="text-xl font-bold flex items-center gap-2 text-slate-800">
+                <Icon name="ph:chart-pie-slice-bold" class="text-amber-500" />
+                Ringkasan Kategori
+                <div class="relative group/tooltip inline-block">
+                  <Icon name="ph:info-bold" class="text-slate-300 hover:text-slate-500 cursor-pointer w-4 h-4 transition-colors mt-0.5" />
+                  <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-50 text-center font-medium leading-relaxed normal-case tracking-normal">
+                    Rangkuman total alokasi nominal uang dan persentasenya berdasarkan kategori pengeluaran yang Anda kelompokkan.
+                    <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95"></div>
+                  </div>
+                </div>
+              </h2>
+              <button 
+                @click="openCategoryModal" 
+                :disabled="!canManageBudget"
+                class="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-all font-semibold active:scale-95 disabled:opacity-50 disabled:pointer-events-none"
+              >
+                <Icon name="ph:gear-six-bold" />
+                Kelola Kategori
+              </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="text-slate-400 text-left border-b border-slate-100">
+                    <th class="pb-3 font-semibold text-xs tracking-wider">Kategori</th>
+                    <th class="pb-3 font-semibold text-xs tracking-wider text-right">Nominal</th>
+                    <th class="pb-3 font-semibold text-xs tracking-wider text-right">Persentase</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50/50">
+                  <tr 
+                    v-for="cat in categories" 
+                    :key="cat.name" 
+                    :class="(summaryByCategory.find(s => s.name === cat.name)?.nominal || 0) === 0 ? 'opacity-55' : ''"
+                    class="border-b border-slate-50/50 last:border-0"
+                  >
+                    <td class="py-3">
+                      <span :class="getCategoryClass(cat.name)" class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                        {{ cat.name }}
+                      </span>
+                    </td>
+                    <td class="py-3 text-right font-semibold text-slate-700">
+                      {{ formatCurrency(summaryByCategory.find(s => s.name === cat.name)?.nominal || 0) }}
+                    </td>
+                    <td class="py-3 text-right text-slate-500 font-medium">
+                      {{ (summaryByCategory.find(s => s.name === cat.name)?.percentage || 0).toFixed(1) }}%
+                    </td>
+                  </tr>
+                  <tr v-if="categories.length === 0">
+                    <td colspan="3" class="py-6 text-center text-slate-400 italic text-xs">
+                      Belum ada kategori yang dikonfigurasi.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="glass-card p-0 mb-10 animate-fade-in-up" style="animation-delay: 0.1s">
         <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-wrap items-center justify-between gap-3">
           <h2 class="text-xl font-bold flex items-center gap-2">
             <Icon name="ph:list-checks-bold" class="text-pink-500" />
-            Alokasi Pengeluaran
+            Daftar Alokasi Anggaran
+            <div class="relative group/tooltip inline-block">
+              <Icon name="ph:info-bold" class="text-slate-300 hover:text-slate-500 cursor-pointer w-4 h-4 transition-colors mt-0.5" />
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-50 text-center font-medium leading-relaxed normal-case tracking-normal">
+                Daftar rincian seluruh item alokasi pengeluaran Anda. Anda dapat menambah, mengubah, atau menghapus rencana alokasi di sini.
+                <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95"></div>
+              </div>
+            </div>
           </h2>
-          <button @click="openAddModal" class="flex items-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all shadow-lg shadow-blue-200 text-sm font-semibold">
-            <Icon name="ph:plus-bold" />
-            Tambah Item
+          <button 
+            @click="openAddModal" 
+            :disabled="!canManageBudget"
+            class="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-all shadow-lg shadow-blue-200 text-sm font-semibold disabled:opacity-50 disabled:pointer-events-none disabled:shadow-none"
+          >
+          <Icon name="ph:plus-bold" />
+          Tambah Item
           </button>
         </div>
+        <div v-if="!canManageBudget" class="px-6 py-4 bg-blue-50/60 border-b border-blue-100 text-blue-700 text-sm font-semibold flex items-start gap-2">
+          <Icon name="ph:lock-key-bold" class="mt-0.5 shrink-0" />
+          <span>Simpan pemasukan terlebih dahulu untuk mulai membuat alokasi anggaran.</span>
+        </div>
         
-        <!-- Desktop Table View -->
-        <div class="hidden md:block overflow-x-auto">
+        <div class="hidden md:block overflow-x-auto rounded-b-2xl sm:rounded-b-[2rem]">
           <table class="w-full text-sm">
             <thead class="bg-slate-50/80">
               <tr>
-                <th class="px-6 py-4 text-left font-semibold text-slate-600">Nama Pengeluaran</th>
+                <th class="px-6 py-4 text-left font-semibold text-slate-600">Nama Alokasi</th>
                 <th class="px-6 py-4 text-right font-semibold text-slate-600 w-48">Nominal (Rp)</th>
                 <th class="px-6 py-4 text-center font-semibold text-slate-600 w-48">Kategori</th>
                 <th class="px-6 py-4 text-right font-semibold text-slate-600 w-32">Persentase</th>
@@ -437,7 +884,7 @@ const saveCategories = async () => {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100">
-              <tr v-for="(item, index) in items" :key="index" class="hover:bg-blue-50/30 transition-colors group">
+              <tr v-for="(item, index) in canManageBudget ? items : []" :key="index" class="hover:bg-blue-50/30 transition-colors group">
                 <td class="px-6 py-4 font-medium text-slate-700">{{ item.name }}</td>
                 <td class="px-6 py-4 text-right font-semibold text-slate-800">{{ formatCurrency(item.nominal) }}</td>
                 <td class="px-6 py-4 text-center">
@@ -459,18 +906,17 @@ const saveCategories = async () => {
                   </div>
                 </td>
               </tr>
-              <tr v-if="items.length === 0">
+              <tr v-if="!canManageBudget || items.length === 0">
                 <td colspan="5" class="px-6 py-10 text-center text-slate-400 italic">
-                  Belum ada item anggaran. Klik "Tambah Item" untuk memulai.
+                  {{ canManageBudget ? 'Belum ada item anggaran. Klik "Tambah Item" untuk memulai.' : 'Daftar alokasi terkunci sampai pemasukan disimpan.' }}
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- Mobile Card List View -->
-        <div class="block md:hidden divide-y divide-slate-100">
-          <div v-for="(item, index) in items" :key="index" class="p-5 flex flex-col gap-3 hover:bg-blue-50/10 transition-colors">
+        <div class="block md:hidden divide-y divide-slate-100 rounded-b-2xl sm:rounded-b-[2rem] overflow-hidden">
+          <div v-for="(item, index) in canManageBudget ? items : []" :key="index" class="p-5 flex flex-col gap-3 hover:bg-blue-50/10 transition-colors">
             <div class="flex justify-between items-start">
               <div class="min-w-0">
                 <h4 class="font-bold text-slate-800 text-sm truncate">{{ item.name }}</h4>
@@ -500,26 +946,38 @@ const saveCategories = async () => {
               </button>
             </div>
           </div>
-          <div v-if="items.length === 0" class="p-8 text-center text-slate-400 italic text-sm">
-            Belum ada item anggaran. Klik "Tambah Item" untuk memulai.
+          <div v-if="!canManageBudget || items.length === 0" class="p-8 text-center text-slate-400 italic text-sm">
+            {{ canManageBudget ? 'Belum ada item anggaran. Klik "Tambah Item" untuk memulai.' : 'Daftar alokasi terkunci sampai pemasukan disimpan.' }}
           </div>
         </div>
       </div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center animate-fade-in-up" style="animation-delay: 0.2s">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start animate-fade-in-up" style="animation-delay: 0.2s">
         <div class="glass-card p-5 sm:p-8">
-          <h2 class="text-xl font-bold mb-8 text-center text-slate-700">Visualisasi Alokasi</h2>
+          <h2 class="text-xl font-bold mb-2 text-center text-slate-700 flex items-center justify-center gap-1.5">
+            Visualisasi dari Total Pemasukan
+            <div class="relative group/tooltip inline-block">
+              <Icon name="ph:info-bold" class="text-slate-300 hover:text-slate-500 cursor-pointer w-4 h-4 transition-colors mt-0.5" />
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-50 text-center font-medium leading-relaxed normal-case tracking-normal">
+                Grafik lingkaran (pie chart) interaktif yang memvisualisasikan persentase sebaran alokasi kategori dari total pemasukan rencana.
+                <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95"></div>
+              </div>
+            </div>
+          </h2>
+          <p class="text-xs text-slate-400 font-medium text-center mb-6">
+            Persentase chart mengikuti total pemasukan, sama seperti Ringkasan Kategori.
+          </p>
           <ClientOnly>
             <div class="flex justify-center max-w-[450px] mx-auto w-full">
               <apexchart 
-                v-if="items.length > 0"
+                v-if="canManageBudget && chartSeries.length > 0"
                 type="pie" 
                 width="100%" 
                 :options="chartOptions" 
                 :series="chartSeries"
               ></apexchart>
               <div v-else class="h-[300px] flex items-center justify-center text-slate-300 italic">
-                Tambah data untuk melihat grafik
+                {{ canManageBudget ? 'Tambah data untuk melihat grafik' : 'Simpan pemasukan untuk membuka visualisasi' }}
               </div>
             </div>
             <template #fallback>
@@ -530,7 +988,7 @@ const saveCategories = async () => {
           </ClientOnly>
         </div>
 
-        <div class="space-y-6">
+        <!-- <div class="space-y-6">
           <div class="glass-card p-6 bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-none shadow-xl shadow-blue-200">
             <div class="flex items-center gap-4">
               <div class="p-3 bg-white/20 rounded-2xl backdrop-blur-md">
@@ -546,20 +1004,19 @@ const saveCategories = async () => {
               Ini adalah langkah yang sangat baik untuk masa depan finansial Anda.
             </p>
           </div>
-
-          <div class="glass-card p-6 border-slate-100">
-            <h3 class="font-bold text-slate-700 mb-4">Tips Budgeting</h3>
-            <ul class="space-y-3">
-              <li class="flex items-start gap-3 text-sm text-slate-600">
-                <Icon name="ph:check-circle-fill" class="text-emerald-500 mt-0.5 shrink-0" />
-                Gunakan aturan 50/30/20 untuk keseimbangan yang ideal.
-              </li>
-              <li class="flex items-start gap-3 text-sm text-slate-600">
-                <Icon name="ph:check-circle-fill" class="text-emerald-500 mt-0.5 shrink-0" />
-                Prioritaskan Dana Darurat sebelum keinginan lain.
-              </li>
-            </ul>
-          </div>
+        </div> -->
+        <div class="glass-card p-6 bg-gradient-to-br from-blue-500 to-indigo-600 text-white border-none shadow-xl shadow-blue-200">
+          <h3 class="font-bold mb-4">Tips Budgeting</h3>
+          <ul class="space-y-3">
+            <li class="flex items-start gap-3 text-sm">
+              <Icon name="ph:check-circle-fill" class="text-white mt-0.5 shrink-0" />
+              Gunakan aturan 50/30/20 untuk keseimbangan yang ideal.
+            </li>
+            <li class="flex items-start gap-3 text-sm">
+              <Icon name="ph:check-circle-fill" class="text-white mt-0.5 shrink-0" />
+              Prioritaskan Dana Darurat sebelum keinginan lain.
+            </li>
+          </ul>
         </div>
       </div>
     </div>
