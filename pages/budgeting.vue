@@ -579,7 +579,7 @@ useHead({
     </div>
 
     <div v-else class="max-w-7xl mx-auto w-full flex-1 flex flex-col">
-      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4 animate-fade-in-up relative z-50">
+      <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4 animate-fade-in-up relative z-30">
         <div>
           <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight mb-2">Perencanaan Anggaran</h1>
            <p class="text-sm font-medium text-slate-400 mt-1">
@@ -648,7 +648,7 @@ useHead({
                 Budgeting Overview
                 <div class="relative group/tooltip inline-block">
                   <Icon name="ph:info-bold" class="text-slate-300 hover:text-slate-500 w-4 h-4 transition-colors mt-0.5 cursor-pointer" />
-                  <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-50 text-center font-medium leading-relaxed normal-case tracking-normal">
+                  <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-30 text-center font-medium leading-relaxed normal-case tracking-normal">
                     Rangkuman perencanaan anggaran bulanan Anda, memuat ringkasan pemasukan, alokasi, sisa uang, serta status kelayakan dana secara waktu nyata.
                     <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95"></div>
                   </div>
@@ -789,7 +789,7 @@ useHead({
                 Ringkasan Kategori
                 <div class="relative group/tooltip inline-block">
                   <Icon name="ph:info-bold" class="text-slate-300 hover:text-slate-500 cursor-pointer w-4 h-4 transition-colors mt-0.5" />
-                  <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-50 text-center font-medium leading-relaxed normal-case tracking-normal">
+                  <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-30 text-center font-medium leading-relaxed normal-case tracking-normal">
                     Rangkuman total alokasi nominal uang dan persentasenya berdasarkan kategori pengeluaran yang Anda kelompokkan.
                     <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95"></div>
                   </div>
@@ -852,7 +852,7 @@ useHead({
             Daftar Alokasi Anggaran
             <div class="relative group/tooltip inline-block">
               <Icon name="ph:info-bold" class="text-slate-300 hover:text-slate-500 cursor-pointer w-4 h-4 transition-colors mt-0.5" />
-              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-50 text-center font-medium leading-relaxed normal-case tracking-normal">
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-30 text-center font-medium leading-relaxed normal-case tracking-normal">
                 Daftar rincian seluruh item alokasi pengeluaran Anda. Anda dapat menambah, mengubah, atau menghapus rencana alokasi di sini.
                 <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95"></div>
               </div>
@@ -958,7 +958,7 @@ useHead({
             Visualisasi dari Total Pemasukan
             <div class="relative group/tooltip inline-block">
               <Icon name="ph:info-bold" class="text-slate-300 hover:text-slate-500 cursor-pointer w-4 h-4 transition-colors mt-0.5" />
-              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-50 text-center font-medium leading-relaxed normal-case tracking-normal">
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 p-2.5 bg-slate-900/95 text-white text-[10px] rounded-lg shadow-lg opacity-0 pointer-events-none group-hover/tooltip:opacity-100 transition-opacity duration-200 z-30 text-center font-medium leading-relaxed normal-case tracking-normal">
                 Grafik lingkaran (pie chart) interaktif yang memvisualisasikan persentase sebaran alokasi kategori dari total pemasukan rencana.
                 <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-slate-900/95"></div>
               </div>

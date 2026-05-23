@@ -1,5 +1,5 @@
 <template>
-  <div ref="monthDropdownRef" class="relative z-50">
+  <div ref="monthDropdownRef" class="relative z-30">
     <div 
       @click="triggerMonthPicker"
       class="flex items-center gap-2 bg-white/80 hover:bg-white border border-slate-200 hover:border-primary rounded-xl px-4 py-2.5 text-sm font-bold text-slate-700 shadow-sm transition-all duration-300 cursor-pointer group active:scale-95 select-none"
@@ -20,7 +20,7 @@
     >
       <div 
         v-if="isMonthDropdownOpen" 
-        class="absolute right-0 top-full mt-2 w-72 bg-white/95 backdrop-blur-xl border border-slate-200/60 rounded-2xl shadow-xl z-50 p-4 animate-scale-up"
+        class="absolute right-0 top-full mt-2 w-72 bg-white/95 backdrop-blur-xl border border-slate-200/60 rounded-2xl shadow-xl z-30 p-4 animate-scale-up"
       >
         <!-- Year selector header -->
         <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
