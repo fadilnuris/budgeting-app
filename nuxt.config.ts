@@ -4,15 +4,21 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ['@nuxtjs/tailwindcss', '@nuxt/icon'],
   css: ['~/assets/css/main.css'],
+  runtimeConfig: {
+    public: {
+      // Override in production with NUXT_PUBLIC_API_BASE
+      apiBase: 'http://localhost:8080'
+    }
+  },
   app: {
     head: {
-      title: 'Flowfund',
-      titleTemplate: '%s | Flowfund',
+      title: 'MoneyPlan',
+      titleTemplate: '%s | MoneyPlan',
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
       ],
       meta: [
-        { name: 'description', content: 'Kelola keuangan Anda dengan Flowfund' }
+        { name: 'description', content: 'Kelola budget zero-based bulanan dengan MoneyPlan' }
       ]
     }
   }

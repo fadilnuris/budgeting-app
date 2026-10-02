@@ -1,153 +1,196 @@
-<template>
-  <div class="glass-card rounded-2xl overflow-hidden h-full flex flex-col">
-    <div class="p-4 sm:p-6 border-b border-slate-100 bg-white/40 flex justify-between items-center">
-      <h2 class="text-xl font-bold text-slate-800">Transaksi Terakhir</h2>
-      <span class="text-sm font-medium text-slate-500 bg-slate-100 px-3 py-1 rounded-full">{{ data?.data?.length || 0 }} transaksi</span>
-    </div>
-
-    <div class="p-4 sm:p-6 flex-1 overflow-auto">
-      <div v-if="pending" class="flex flex-col items-center justify-center py-10 space-y-4">
-        <div class="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-        <p class="text-slate-500 font-medium animate-pulse">Memuat data...</p>
-      </div>
-      
-      <div v-else-if="error" class="bg-red-50 text-red-600 p-4 rounded-xl border border-red-100 flex items-center space-x-3">
-        <Icon name="lucide:alert-circle" class="w-5 h-5 flex-shrink-0" />
-        <span class="font-medium">Gagal memuat transaksi.</span>
-      </div>
-
-      <div v-else-if="!data?.data || data.data.length === 0" class="text-center py-12">
-        <div class="bg-slate-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Icon name="lucide:clipboard-list" class="w-8 h-8 text-slate-400" />
-        </div>
-        <p class="text-slate-500 font-medium">Belum ada transaksi.</p>
-        <p class="text-slate-400 text-sm mt-1">Mulai dengan menambahkan transaksi pertama Anda.</p>
-      </div>
-
-      <div v-else class="space-y-3">
-        <div
-          v-for="item in data.data"
-          :key="item.ID"
-          class="group flex items-center justify-between p-3 sm:p-4 rounded-xl border border-slate-100 bg-white/60 hover:bg-white hover:shadow-sm transition-all duration-300 gap-3"
-        >
-          <div class="flex items-center space-x-3 min-w-0">
-            <div :class="[
-              'w-10 sm:w-12 h-10 sm:h-12 rounded-full flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110',
-              item.Type === 'income' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'
-            ]">
-              <Icon v-if="item.Type === 'income'" name="lucide:trending-up" class="w-5 sm:w-6 h-5 sm:h-6" />
-              <Icon v-else name="lucide:trending-down" class="w-5 sm:w-6 h-5 sm:h-6" />
-            </div>
-            <div class="min-w-0">
-              <p class="font-semibold text-slate-800 text-sm sm:text-base truncate">{{ item.Note || 'Tanpa kategori' }}</p>
-              <div class="flex items-center space-x-2 mt-0.5">
-                <p class="text-[10px] sm:text-xs font-medium text-slate-500 capitalize">{{ item.Type === 'income' ? 'Pemasukan' : 'Pengeluaran' }}</p>
-                <span class="text-[10px] text-slate-300">•</span>
-                <p class="text-[10px] sm:text-xs text-slate-400">{{ formatDate(item.CreatedAt) }}</p>
-              </div>
-            </div>
-          </div>
-          <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-            <p :class="[
-              'font-bold text-sm sm:text-lg',
-              item.Type === 'income' ? 'text-emerald-600' : 'text-slate-800'
-            ]">
-              <span v-if="item.Type === 'income'">+</span><span v-else>-</span>Rp {{ item.Amount.toLocaleString() }}
-            </p>
-            <button 
-              @click="deleteTransaction(item.ID)"
-              class="p-2 text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 rounded-xl transition-all duration-200 active:scale-95"
-              title="Hapus transaksi"
-            >
-              <Icon name="lucide:trash-2" class="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <Teleport to="body">
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 scale-95"
-        enter-to-class="opacity-100 scale-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100 scale-100"
-        leave-to-class="opacity-0 scale-95"
-      >
-        <div v-if="showDeleteModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/30 backdrop-blur-[2px]">
-          <div class="glass-card bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8">
-            <div class="w-14 h-14 bg-rose-50 rounded-full flex items-center justify-center mb-6 text-rose-500">
-              <Icon name="lucide:trash-2" class="w-8 h-8" />
-            </div>
-            <h3 class="text-2xl font-bold text-slate-800 mb-2">Hapus Transaksi?</h3>
-            <p class="text-slate-500 mb-8 leading-relaxed">Apakah Anda yakin ingin menghapus transaksi ini? Tindakan ini tidak dapat dibatalkan.</p>
-            <div class="flex space-x-3">
-              <button 
-                @click="showDeleteModal = false" 
-                class="flex-1 px-4 py-3 rounded-xl bg-slate-50 text-slate-600 font-semibold transition-all duration-200"
-              >
-                Batal
-              </button>
-              <button 
-                @click="handleConfirmDelete" 
-                class="flex-1 px-4 py-3 rounded-xl bg-rose-500 text-white font-semibold hover:bg-rose-600 shadow-lg shadow-rose-200 transition-all duration-200"
-              >
-                Hapus
-              </button>
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
-  </div>
-</template>
-
-<script setup>
-import { ref } from 'vue'
+<script setup lang="ts">
 import { refreshNuxtData } from '#app'
 
+type TransactionItem = {
+  ID?: number
+  Type?: 'income' | 'expense'
+  Amount?: number
+  Note?: string
+  Date?: string
+  date?: string
+  CreatedAt?: string
+}
+
+const apiBase = useRuntimeConfig().public.apiBase
 const userIdCookie = useCookie('user_id')
 const userId = userIdCookie.value || '0'
+const search = ref('')
+const selectedType = ref('all')
+const transactionToDelete = ref<number | null>(null)
 
-const { data, pending, error } = await useFetch('https://budgeting-api.up.railway.app/transactions', {
+const { data, pending, error } = await useFetch<{ data: TransactionItem[] }>(`${apiBase}/transactions`, {
   key: 'transactions-list',
   params: { user_id: userId }
 })
 
-const formatDate = (dateString) => {
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0
+  }).format(value || 0)
+}
+
+const getRawDate = (item: TransactionItem) => item.Date || item.date || item.CreatedAt || ''
+
+const formatDate = (dateString: string) => {
   if (!dateString) return ''
-  const date = new Date(dateString)
   return new Intl.DateTimeFormat('id-ID', {
     day: '2-digit',
     month: 'short',
     year: 'numeric'
-  }).format(date)
+  }).format(new Date(dateString))
 }
 
-const showDeleteModal = ref(false)
-const transactionToDelete = ref(null)
+const formatGroupDate = (dateString: string) => {
+  if (!dateString) return 'Tanpa tanggal'
+  return new Intl.DateTimeFormat('id-ID', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric'
+  }).format(new Date(dateString))
+}
 
-const deleteTransaction = (id) => {
+const parseNote = (note?: string) => {
+  const parts = (note || '').split(' - ').map(part => part.trim()).filter(Boolean)
+  return {
+    allocation: parts[0] || 'Tanpa sub-alokasi',
+    description: parts[1] || parts[0] || 'Transaksi',
+    bank: parts[2] || '-',
+    memo: parts.slice(3).join(' - ')
+  }
+}
+
+const filteredTransactions = computed(() => {
+  const query = search.value.trim().toLowerCase()
+  return [...(data.value?.data || [])]
+    .filter(item => selectedType.value === 'all' || item.Type === selectedType.value)
+    .filter(item => !query || (item.Note || '').toLowerCase().includes(query))
+    .sort((a, b) => new Date(getRawDate(b)).getTime() - new Date(getRawDate(a)).getTime())
+})
+
+const groupedTransactions = computed(() => {
+  return filteredTransactions.value.reduce((groups, item) => {
+    const key = getRawDate(item).slice(0, 10) || 'unknown'
+    if (!groups[key]) groups[key] = []
+    groups[key].push(item)
+    return groups
+  }, {} as Record<string, TransactionItem[]>)
+})
+
+const dailyTotal = (items: TransactionItem[]) => {
+  return items.reduce((sum, item) => {
+    if (item.Type === 'expense') return sum + (item.Amount || 0)
+    return sum
+  }, 0)
+}
+
+const deleteTransaction = (id?: number) => {
+  if (!id) return
   transactionToDelete.value = id
-  showDeleteModal.value = true
 }
 
 const handleConfirmDelete = async () => {
   if (!transactionToDelete.value) return
 
   try {
-    await $fetch(`https://budgeting-api.up.railway.app/transactions/${transactionToDelete.value}`, {
-      method: 'DELETE'
-    })
-    
-    // Refresh the list
-    refreshNuxtData('transactions-list')
+    await $fetch(`${apiBase}/transactions/${transactionToDelete.value}`, { method: 'DELETE' })
+    await refreshNuxtData('transactions-list')
   } catch (err) {
     console.error('Failed to delete transaction:', err)
+    alert('Gagal menghapus transaksi.')
   } finally {
-    showDeleteModal.value = false
     transactionToDelete.value = null
   }
 }
 </script>
+
+<template>
+  <div class="flex h-full flex-col rounded-lg border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-200 p-5">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 class="text-lg font-bold text-[#202124]">Ledger Transaksi</h2>
+          <p class="text-sm text-[#5F6368]">{{ filteredTransactions.length }} transaksi ditemukan</p>
+        </div>
+        <select v-model="selectedType" class="min-h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold outline-none focus:border-[#1A73E8]">
+          <option value="all">Semua</option>
+          <option value="expense">Pengeluaran</option>
+          <option value="income">Pemasukan</option>
+        </select>
+      </div>
+      <div class="relative mt-4">
+        <Icon name="lucide:search" class="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+        <input v-model="search" class="min-h-11 w-full rounded-lg border border-slate-200 pl-10 pr-3 text-sm outline-none focus:border-[#1A73E8] focus:ring-2 focus:ring-[#1A73E8]/10" placeholder="Cari deskripsi, sub-alokasi, atau bank" />
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-auto p-5">
+      <div v-if="pending" class="flex flex-col items-center justify-center py-10">
+        <div class="h-8 w-8 animate-spin rounded-full border-4 border-primary/20 border-t-primary"></div>
+        <p class="mt-3 text-sm font-semibold text-slate-500">Memuat transaksi...</p>
+      </div>
+
+      <div v-else-if="error" class="rounded-lg border border-red-100 bg-red-50 p-4 text-sm font-semibold text-red-600">
+        Gagal memuat transaksi.
+      </div>
+
+      <div v-else-if="filteredTransactions.length === 0" class="py-12 text-center">
+        <Icon name="lucide:clipboard-list" class="mx-auto h-10 w-10 text-slate-300" />
+        <p class="mt-3 text-sm font-semibold text-slate-500">Belum ada transaksi sesuai filter.</p>
+      </div>
+
+      <div v-else class="space-y-6">
+        <section v-for="(items, dateKey) in groupedTransactions" :key="dateKey">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <h3 class="text-sm font-bold text-[#202124]">{{ formatGroupDate(String(dateKey)) }}</h3>
+            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-[#5F6368]">Total harian {{ formatCurrency(dailyTotal(items)) }}</span>
+          </div>
+
+          <div class="space-y-2">
+            <article v-for="item in items" :key="item.ID" class="flex items-start justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/60 p-3">
+              <div class="flex min-w-0 gap-3">
+                <div :class="['mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg', item.Type === 'income' ? 'bg-[#34A853]/10 text-[#34A853]' : 'bg-[#EA4335]/10 text-[#EA4335]']">
+                  <Icon :name="item.Type === 'income' ? 'lucide:trending-up' : 'lucide:trending-down'" class="h-5 w-5" />
+                </div>
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-bold text-[#202124]">{{ parseNote(item.Note).description }}</p>
+                  <div class="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-[#5F6368]">
+                    <span>{{ parseNote(item.Note).allocation }}</span>
+                    <span>•</span>
+                    <span>{{ parseNote(item.Note).bank }}</span>
+                    <span>•</span>
+                    <span>{{ formatDate(getRawDate(item)) }}</span>
+                  </div>
+                  <p v-if="parseNote(item.Note).memo" class="mt-1 text-xs text-slate-400">{{ parseNote(item.Note).memo }}</p>
+                </div>
+              </div>
+              <div class="flex shrink-0 items-center gap-2">
+                <p :class="['text-sm font-bold sm:text-base', item.Type === 'income' ? 'text-[#34A853]' : 'text-[#202124]']">
+                  {{ item.Type === 'income' ? '+' : '-' }}{{ formatCurrency(item.Amount || 0) }}
+                </p>
+                <button class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-[#D32F2F] hover:bg-[#D32F2F]/10" title="Hapus transaksi" @click="deleteTransaction(item.ID)">
+                  <Icon name="lucide:trash-2" class="h-4 w-4" />
+                </button>
+              </div>
+            </article>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <Teleport to="body">
+      <div v-if="transactionToDelete" class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 p-4">
+        <div class="w-full max-w-sm rounded-lg bg-white p-5 shadow-2xl">
+          <h2 class="text-lg font-bold text-[#202124]">Hapus Transaksi?</h2>
+          <p class="mt-2 text-sm text-[#5F6368]">Riwayat ini akan dihapus permanen dari ledger.</p>
+          <div class="mt-6 flex justify-end gap-2">
+            <button class="min-h-11 rounded-lg border border-slate-200 px-4 text-sm font-bold text-slate-600 hover:bg-slate-50" @click="transactionToDelete = null">Batal</button>
+            <button class="min-h-11 rounded-lg bg-[#D32F2F] px-4 text-sm font-bold text-white hover:bg-[#B3261E]" @click="handleConfirmDelete">Hapus</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+  </div>
+</template>

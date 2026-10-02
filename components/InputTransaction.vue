@@ -1,108 +1,198 @@
-<script setup>
-import { ref, computed } from 'vue'
+<script setup lang="ts">
 import { refreshNuxtData } from '#app'
+import type { BudgetItem, BudgetPlan } from '~/types/budget'
 
+type TransactionItem = {
+  Type?: 'income' | 'expense'
+  Amount?: number
+  Note?: string
+  Date?: string
+  date?: string
+  CreatedAt?: string
+}
+
+const apiBase = useRuntimeConfig().public.apiBase
 const userIdCookie = useCookie('user_id')
 const userId = parseInt(userIdCookie.value || '0', 10)
+const currentMonth = new Date().toISOString().slice(0, 7)
 
-const type = ref('expense')
-const amount = ref('')
-const note = ref('')
-const date = ref(new Date().toISOString().substr(0, 10))
+const date = ref(new Date().toISOString().slice(0, 10))
+const description = ref('')
+const amount = ref(0)
+const selectedAllocation = ref('')
+const paymentMethod = ref('')
+const notes = ref('')
 const isSubmitting = ref(false)
+const budgetItems = ref<BudgetItem[]>([])
+const transactions = ref<TransactionItem[]>([])
+
+const formatCurrency = (value: number) => {
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: 'IDR',
+    minimumFractionDigits: 0
+  }).format(value || 0)
+}
+
+const parseCurrency = (value: string) => {
+  const parsed = parseInt(value.replace(/[^0-9]/g, ''), 10)
+  return Number.isNaN(parsed) ? 0 : parsed
+}
 
 const formattedAmount = computed({
-  get() {
-    if (!amount.value) return ''
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(amount.value)
-  },
-  set(val) {
-    const number = parseInt(val.replace(/[^0-9]/g, ''), 10)
-    amount.value = isNaN(number) ? 0 : number
+  get: () => amount.value ? formatCurrency(amount.value) : '',
+  set: (value: string) => {
+    amount.value = parseCurrency(value)
   }
 })
 
+const getMonthFromTransaction = (transaction: TransactionItem) => {
+  const rawDate = transaction.Date || transaction.date || transaction.CreatedAt || ''
+  if (/^\d{4}-\d{2}/.test(rawDate)) return rawDate.slice(0, 7)
+
+  const parsedDate = new Date(rawDate)
+  if (Number.isNaN(parsedDate.getTime())) return ''
+  return `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`
+}
+
+const getActualSpent = (item: BudgetItem) => {
+  const itemName = item.name.toLowerCase()
+  return transactions.value.reduce((sum, transaction) => {
+    if (transaction.Type !== 'expense' || getMonthFromTransaction(transaction) !== currentMonth) return sum
+    const note = (transaction.Note || '').toLowerCase()
+    return note.includes(itemName) ? sum + (transaction.Amount || 0) : sum
+  }, 0)
+}
+
+const allocationOptions = computed(() => {
+  return budgetItems.value.map(item => {
+    const spent = getActualSpent(item)
+    return {
+      ...item,
+      spent,
+      remaining: (item.nominal || 0) - spent
+    }
+  })
+})
+
+const selectedAllocationDetail = computed(() => {
+  return allocationOptions.value.find(item => item.name === selectedAllocation.value)
+})
+
+const isOverBudget = computed(() => {
+  const allocation = selectedAllocationDetail.value
+  return Boolean(allocation && amount.value > allocation.remaining)
+})
+
+const loadBudgetContext = async () => {
+  try {
+    const [budgetResponse, transactionResponse] = await Promise.all([
+      $fetch<{ data?: BudgetPlan }>(`${apiBase}/budget`, { params: { user_id: userId, month: currentMonth } }),
+      $fetch<{ data?: TransactionItem[] }>(`${apiBase}/transactions`, { params: { user_id: userId } })
+    ])
+    budgetItems.value = budgetResponse.data?.items || []
+    transactions.value = transactionResponse.data || []
+    selectedAllocation.value = budgetItems.value[0]?.name || ''
+  } catch (error) {
+    console.error('Failed to load transaction context:', error)
+  }
+}
+
 const submitForm = async () => {
+  if (!description.value.trim() || amount.value <= 0 || !selectedAllocation.value || !paymentMethod.value.trim()) {
+    alert('Tanggal, deskripsi, nominal, sub-alokasi, dan bank wajib diisi.')
+    return
+  }
+
+  if (isOverBudget.value) {
+    const proceed = confirm('Transaksi ini akan membuat sub-alokasi over budget. Tetap simpan?')
+    if (!proceed) return
+  }
+
   isSubmitting.value = true
   try {
-    await $fetch('https://budgeting-api.up.railway.app/transactions', {
+    const notePayload = [
+      selectedAllocation.value,
+      description.value.trim(),
+      paymentMethod.value.trim(),
+      notes.value.trim()
+    ].filter(Boolean).join(' - ')
+
+    await $fetch(`${apiBase}/transactions`, {
       method: 'POST',
       body: {
         user_id: userId,
-        type: type.value,
-        amount: Number(amount.value),
-        note: note.value,
+        type: 'expense',
+        amount: amount.value,
+        note: notePayload,
         date: date.value
       }
     })
-    amount.value = ''
-    note.value = ''
-    await refreshNuxtData('transactions-list')
-  } catch (e) {
-    console.error(e)
+
+    description.value = ''
+    amount.value = 0
+    notes.value = ''
+    await Promise.all([loadBudgetContext(), refreshNuxtData('transactions-list')])
+  } catch (error) {
+    console.error('Failed to save transaction:', error)
+    alert('Gagal menyimpan transaksi.')
   } finally {
     isSubmitting.value = false
   }
 }
+
+onMounted(loadBudgetContext)
 </script>
 
 <template>
-  <div class="glass-card p-5 sm:p-6 rounded-2xl">
-    <h2 class="text-xl font-bold text-slate-800 mb-6">Tambah Transaksi</h2>
-    <form @submit.prevent="submitForm" class="space-y-5">
-      
-      <div class="space-y-1.5">
-        <label class="text-sm font-medium text-slate-700">Jenis</label>
-        <div class="relative">
-          <select v-model="type" class="w-full appearance-none bg-white/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-primary focus:border-primary block p-3 outline-none transition-all shadow-sm">
-            <option value="income">Pemasukan</option>
-            <option value="expense">Pengeluaran</option>
-          </select>
-          <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-slate-500">
-            <Icon name="lucide:chevron-down" class="w-4 h-4" />
-          </div>
-        </div>
+  <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+    <h2 class="text-lg font-bold text-[#202124]">Catat Pengeluaran</h2>
+    <form class="mt-5 space-y-4" @submit.prevent="submitForm">
+      <label class="block">
+        <span class="text-sm font-semibold text-[#5F6368]">Tanggal</span>
+        <input v-model="date" type="date" required class="mt-1 min-h-11 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-[#1A73E8] focus:ring-2 focus:ring-[#1A73E8]/10" />
+      </label>
+
+      <label class="block">
+        <span class="text-sm font-semibold text-[#5F6368]">Deskripsi</span>
+        <input v-model="description" type="text" required placeholder="Contoh: Makan siang" class="mt-1 min-h-11 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-[#1A73E8] focus:ring-2 focus:ring-[#1A73E8]/10" />
+      </label>
+
+      <label class="block">
+        <span class="text-sm font-semibold text-[#5F6368]">Nominal</span>
+        <input v-model="formattedAmount" inputmode="numeric" required placeholder="Rp0" class="mt-1 min-h-11 w-full rounded-lg border border-slate-200 px-3 font-bold outline-none focus:border-[#1A73E8] focus:ring-2 focus:ring-[#1A73E8]/10" />
+      </label>
+
+      <label class="block">
+        <span class="text-sm font-semibold text-[#5F6368]">Dari Sub-Alokasi</span>
+        <select v-model="selectedAllocation" required class="mt-1 min-h-11 w-full rounded-lg border border-slate-200 bg-white px-3 outline-none focus:border-[#1A73E8] focus:ring-2 focus:ring-[#1A73E8]/10">
+          <option value="" disabled>Pilih pos budget</option>
+          <option v-for="allocation in allocationOptions" :key="allocation.id || allocation.name" :value="allocation.name">
+            {{ allocation.name }} - sisa {{ formatCurrency(allocation.remaining) }}
+          </option>
+        </select>
+        <p v-if="selectedAllocationDetail" :class="['mt-1 text-xs font-semibold', isOverBudget ? 'text-[#D32F2F]' : 'text-[#34A853]']">
+          Sisa budget: {{ formatCurrency(selectedAllocationDetail.remaining) }}
+        </p>
+      </label>
+
+      <label class="block">
+        <span class="text-sm font-semibold text-[#5F6368]">Metode/Bank</span>
+        <input v-model="paymentMethod" type="text" required placeholder="Contoh: Seabank" class="mt-1 min-h-11 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-[#1A73E8] focus:ring-2 focus:ring-[#1A73E8]/10" />
+      </label>
+
+      <label class="block">
+        <span class="text-sm font-semibold text-[#5F6368]">Catatan</span>
+        <input v-model="notes" type="text" placeholder="Opsional" class="mt-1 min-h-11 w-full rounded-lg border border-slate-200 px-3 outline-none focus:border-[#1A73E8] focus:ring-2 focus:ring-[#1A73E8]/10" />
+      </label>
+
+      <div v-if="isOverBudget" class="rounded-lg border border-[#D32F2F]/20 bg-[#D32F2F]/10 p-3 text-sm font-semibold text-[#D32F2F]">
+        Transaksi akan melewati batas sub-alokasi.
       </div>
 
-      <div class="space-y-1.5">
-        <label class="text-sm font-medium text-slate-700">Tanggal</label>
-        <input
-          v-model="date"
-          type="date"
-          required
-          class="w-full bg-white/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-primary focus:border-primary block p-3 outline-none transition-all shadow-sm"
-        />
-      </div>
-
-      <div class="space-y-1.5">
-        <label class="text-sm font-medium text-slate-700">Nominal</label>
-        <input
-          v-model="formattedAmount"
-          type="text"
-          required
-          placeholder="Rp0"
-          class="w-full bg-white/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-primary focus:border-primary block p-3 outline-none transition-all shadow-sm font-semibold"
-        />
-      </div>
-
-      <div class="space-y-1.5">
-        <label class="text-sm font-medium text-slate-700">Keterangan</label>
-        <input
-          v-model="note"
-          type="text"
-          required
-          placeholder="Misal: Belanja Bulanan"
-          class="w-full bg-white/50 border border-slate-200 text-slate-900 text-sm rounded-xl focus:ring-primary focus:border-primary block p-3 outline-none transition-all shadow-sm"
-        />
-      </div>
-
-      <button :disabled="isSubmitting" class="w-full text-white bg-primary hover:bg-primary/90 focus:ring-4 focus:ring-primary/20 font-medium rounded-xl text-sm px-5 py-3 text-center transition-all duration-300 shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed mt-2">
-        <span v-if="isSubmitting">Menyimpan...</span>
-        <span v-else>Simpan Transaksi</span>
+      <button :disabled="isSubmitting || allocationOptions.length === 0" class="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-[#1A73E8] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1558B0] disabled:opacity-60">
+        <Icon :name="isSubmitting ? 'lucide:loader-2' : 'lucide:plus-circle'" :class="['h-4 w-4', isSubmitting ? 'animate-spin' : '']" />
+        {{ isSubmitting ? 'Menyimpan' : 'Simpan Pengeluaran' }}
       </button>
     </form>
   </div>

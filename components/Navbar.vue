@@ -11,7 +11,7 @@
         class="text-xl font-bold tracking-tight text-primary flex items-center gap-2 animate-fade-in"
       >
         <Icon name="lucide:wallet" class="w-6 h-6 text-primary" />
-        <span class="font-outfit">Flowfund</span>
+        <span class="font-outfit">MoneyPlan</span>
       </NuxtLink>
 
       <div class="hidden items-center gap-8 md:flex">
@@ -152,6 +152,7 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const apiBase = useRuntimeConfig().public.apiBase
 const navLinks = [
   { label: 'Dashboard', href: '/dashboard' },
   { label: 'Transaksi', href: '/transactions' },
@@ -169,8 +170,8 @@ const userIdCookie = useCookie('user_id')
 const profileName = ref('')
 const profileEmail = ref('')
 
-const userName = computed(() => profileName.value || userNameCookie.value || 'Pengguna Flowfund')
-const userEmail = computed(() => profileEmail.value || userEmailCookie.value || 'pengguna@flowfund.com')
+const userName = computed(() => profileName.value || userNameCookie.value || 'Pengguna MoneyPlan')
+const userEmail = computed(() => profileEmail.value || userEmailCookie.value || 'pengguna@moneyplan.id')
 
 const userInitial = computed(() => {
   const name = userName.value
@@ -182,7 +183,7 @@ const fetchProfile = async () => {
   if (!userId) return
   
   try {
-    const response: any = await $fetch('https://budgeting-api.up.railway.app/profile', {
+    const response: any = await $fetch(`${apiBase}/profile`, {
       params: { user_id: userId }
     })
     if (response?.data) {

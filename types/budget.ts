@@ -4,6 +4,8 @@ export interface BudgetCategory {
   plan_id?: number;
   name: string;
   color: string;
+  allocatedAmount?: number;
+  bankName?: string;
 }
 
 export interface BudgetItem {
@@ -12,6 +14,8 @@ export interface BudgetItem {
   name: string;
   nominal: number;
   category: string;
+  actualSpent?: number;
+  bankName?: string;
 }
 
 export interface BudgetPlan {

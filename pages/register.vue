@@ -136,7 +136,7 @@
         </h3>
         
         <p class="text-slate-500 font-medium mb-8 px-2">
-          Akun Anda telah berhasil dibuat. Silakan masuk untuk mulai mengelola keuangan Anda dengan Flowfund.
+          Akun Anda telah berhasil dibuat. Silakan masuk untuk mulai mengelola budget bulanan dengan MoneyPlan.
         </p>
         
         <button 
@@ -157,6 +157,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const apiBase = useRuntimeConfig().public.apiBase
 const name = ref('')
 const email = ref('')
 const password = ref('')
@@ -182,7 +183,7 @@ const handleRegister = async () => {
   isLoading.value = true
   
   try {
-    await $fetch('https://budgeting-api.up.railway.app/register', {
+    await $fetch(`${apiBase}/register`, {
       method: 'POST',
       body: {
         name: name.value,
@@ -203,7 +204,7 @@ const handleRegister = async () => {
 useHead({
   title: 'Daftar',
   meta: [
-    { name: 'description', content: 'Buat akun Flowfund Anda untuk mulai mengelola keuangan dengan lebih cerdas.' }
+    { name: 'description', content: 'Buat akun MoneyPlan Anda untuk mulai mengelola budget bulanan dengan lebih cerdas.' }
   ]
 })
 </script>

@@ -4,8 +4,8 @@
     
     <div class="max-w-6xl mx-auto w-full flex-1 flex flex-col">
       <header class="mb-10 animate-fade-in-up">
-        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight mb-2">Riwayat Transaksi</h1>
-        <p class="text-slate-500 text-lg">Kelola pemasukan dan pengeluaran Anda dengan mudah.</p>
+        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight mb-2">Expense Tracking Ledger</h1>
+        <p class="text-slate-500 text-lg">Catat pengeluaran harian dan pantau riwayat berdasarkan sub-alokasi.</p>
       </header>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -15,7 +15,7 @@
           Login
         </h2>
         <p class="mt-1 text-slate-500 font-medium">
-          Masuk ke akun Flowfund Anda
+          Masuk ke akun MoneyPlan Anda
         </p>
       </div>
 
@@ -100,6 +100,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
+const apiBase = useRuntimeConfig().public.apiBase
 const email = ref('')
 const password = ref('')
 const showPassword = ref(false)
@@ -111,7 +112,7 @@ const handleLogin = async () => {
   isLoading.value = true
   
   try {
-    const response: any = await $fetch('https://budgeting-api.up.railway.app/login', {
+    const response: any = await $fetch(`${apiBase}/login`, {
       method: 'POST',
       body: {
         email: email.value,
@@ -136,13 +137,13 @@ const handleLogin = async () => {
       maxAge: 60 * 60 * 24 * 3,
       path: '/'
     })
-    userNameCookie.value = response.data?.name || response.data?.Name || 'Pengguna Flowfund'
+    userNameCookie.value = response.data?.name || response.data?.Name || 'Pengguna MoneyPlan'
 
     const userEmailCookie = useCookie('user_email', {
       maxAge: 60 * 60 * 24 * 3,
       path: '/'
     })
-    userEmailCookie.value = response.data?.email || response.data?.Email || 'pengguna@flowfund.com'
+    userEmailCookie.value = response.data?.email || response.data?.Email || 'pengguna@moneyplan.id'
     
     router.push('/dashboard')
   } catch (error: any) {
@@ -155,7 +156,7 @@ const handleLogin = async () => {
 useHead({
   title: 'Masuk',
   meta: [
-    { name: 'description', content: 'Masuk ke akun Flowfund Anda untuk mulai mengelola keuangan.' }
+    { name: 'description', content: 'Masuk ke akun MoneyPlan Anda untuk mulai mengelola budget bulanan.' }
   ]
 })
 </script>
